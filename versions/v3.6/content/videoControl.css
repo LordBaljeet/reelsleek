@@ -1,0 +1,149 @@
+/* ── Seek bar ── */
+
+.reelsleek-video-control {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+}
+
+.reelsleek-seekbar {
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: #6b6b6ba2;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Firefox thumb */
+.reelsleek-seekbar::-moz-range-thumb {
+  opacity: 0;
+  border-radius: 0;
+  width: 2px;
+  background: #fff;
+  border: none;
+}
+
+/* Chrome/Safari thumb */
+.reelsleek-seekbar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  opacity: 0;
+  width: 2px;
+  height: 100%;
+  background: #fff;
+  border: none;
+}
+
+/* Firefox progress fill */
+.reelsleek-seekbar::-moz-range-progress {
+  background: #fff;
+  height: 100%;
+}
+
+/* Chrome/Safari track (progress fill via CSS variable) */
+.reelsleek-seekbar::-webkit-slider-runnable-track {
+  height: 100%;
+  background: linear-gradient(to right, #fff var(--seekbar-fill, 0%), #6b6b6ba2 var(--seekbar-fill, 0%));
+}
+
+/* Expand track on hover */
+.reelsleek-video-control:hover .reelsleek-seekbar {
+  height: 100%;
+}
+
+/* Show on parent hover */
+div:has(.reelsleek-video-control):hover > .reelsleek-video-control {
+  opacity: 1;
+}
+
+body.reelsleek-seekbar-always-visible .reelsleek-video-control {
+  opacity: 1;
+}
+
+/* Show thumb + full opacity when paused */
+.reelsleek-video-control[data-show-paused="true"] {
+  opacity: 1;
+}
+
+.reelsleek-video-control[data-show-paused="true"] .reelsleek-seekbar::-moz-range-thumb {
+  opacity: 1;
+}
+
+.reelsleek-video-control[data-show-paused="true"] .reelsleek-seekbar::-webkit-slider-thumb {
+  opacity: 1;
+}
+
+/* ── Fullscreen container ── */
+
+.reelsleek-fullscreen-container {
+  display: flex;
+  align-items: center;
+  background-color: var(--control-bg);
+  padding: var(--control-padding);
+  border-radius: var(--control-radius);
+  overflow: hidden;
+  position: absolute;
+  z-index: 1000;
+  opacity: 0;
+  top: 10px;
+  right: 10px;
+  transition: var(--transition-opacity);
+}
+
+div:has(.reelsleek-fullscreen-container):hover > .reelsleek-fullscreen-container {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Fullscreen button ── */
+
+.reelsleek-fullscreen-button {
+  display: inherit;
+  width: var(--control-size);
+  height: var(--control-size);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.reelsleek-expand-icon   { display: block; }
+.reelsleek-collapse-icon { display: none; }
+
+/* ── Fullscreen mode overrides ── */
+
+div:has(> div > video):fullscreen,
+div:has(> div > video):-webkit-full-screen {
+  padding: 10px 0;
+}
+
+div:has(> div > video):fullscreen > div,
+div:has(> div > video):-webkit-full-screen > div {
+  width: fit-content;
+  position: relative;
+  margin: auto;
+}
+
+div:has(> div > video):fullscreen video,
+div:has(> div > video):-webkit-full-screen video {
+  object-fit: contain;
+  width: fit-content;
+}
+
+div:has(> div > video):fullscreen .reelsleek-fullscreen-container,
+div:has(> div > video):-webkit-full-screen .reelsleek-fullscreen-container    { opacity: 1; }
+
+div:has(> div > video):fullscreen .reelsleek-expand-icon,
+div:has(> div > video):-webkit-full-screen .reelsleek-expand-icon   { display: none; }
+
+div:has(> div > video):fullscreen .reelsleek-collapse-icon,
+div:has(> div > video):-webkit-full-screen .reelsleek-collapse-icon { display: block; }

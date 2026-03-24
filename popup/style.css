@@ -1,0 +1,367 @@
+/**
+ * ReelSleek Popup Styles
+ * Modern dark theme with accent colors and smooth animations
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap");
+
+/* ═══════════════════════════════════════════════════════════
+   Base Reset & Variables
+   ═══════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Color palette */
+  --bg: #0e0e0f;
+  --surface: #181819;
+  --border: #2a2a2d;
+  --accent: #ff4d6d;
+  --text: #f0f0f0;
+  --muted: #606068;
+  --green: #3ddc97;
+
+  /* Animation timing */
+  --transition-fast: 0.15s;
+  --transition-normal: 0.25s;
+  --transition-slow: 0.3s;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Body & Layout
+   ═══════════════════════════════════════════════════════════ */
+
+body {
+  width: 240px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "DM Mono", monospace;
+  padding: 18px 16px 16px;
+  user-select: none;
+  overflow: hidden;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Header & Status
+   ═══════════════════════════════════════════════════════════ */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.logo {
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.5px;
+}
+.logo span {
+  color: var(--accent);
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 8px;
+  transition: all 0.3s ease;
+}
+.status-pill.active {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(61, 220, 151, 0.1);
+}
+.status-pill.error {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(255, 77, 109, 0.1);
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.dot.pulse {
+  animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Permission Banner
+   ═══════════════════════════════════════════════════════════ */
+.perm-banner {
+  background: rgba(255, 77, 109, 0.08);
+  border: 1px solid rgba(255, 77, 109, 0.35);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.perm-banner[hidden] {
+  display: none;
+}
+
+.perm-banner p {
+  font-size: 11px;
+  color: #c0c0c8;
+  line-height: 1.5;
+}
+
+.perm-banner strong {
+  color: var(--text);
+}
+
+.perm-banner button {
+  width: 100%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: 7px;
+  padding: 9px 0;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 0 12px rgba(255, 77, 109, 0.25);
+}
+
+.perm-banner button:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.perm-banner button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Section Labels & Typography
+   ═══════════════════════════════════════════════════════════ */
+.section-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 9px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Orientation Toggle
+   ═══════════════════════════════════════════════════════════ */
+.orient-toggle {
+  position: relative;
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.orient-toggle::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 4px);
+  height: calc(100% - 6px);
+  background: var(--accent);
+  border-radius: 5px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+  box-shadow: 0 0 10px rgba(255, 77, 109, 0.35);
+}
+.orient-toggle.vertical::before {
+  transform: translateX(calc(100% + 4px));
+}
+
+.orient-btn {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 7px 0;
+  border-radius: 5px;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+
+.orient-toggle.horizontal .orient-btn[data-orient="horizontal"],
+.orient-toggle.vertical .orient-btn[data-orient="vertical"],
+.orient-toggle.custom .orient-btn[data-toolbar-mode="custom"],
+.orient-toggle.native .orient-btn[data-toolbar-mode="native"] {
+  color: #fff;
+}
+
+.orient-toggle.native::before {
+  transform: translateX(calc(100% + 4px));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Visibility Toggles
+   ═══════════════════════════════════════════════════════════ */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.vis-toggle {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.vis-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.vis-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(255, 77, 109, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Reload Button
+   ═══════════════════════════════════════════════════════════ */
+.reload-btn {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 0;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
+  margin-bottom: 16px;
+}
+.reload-btn:hover {
+  border-color: var(--text);
+}
+.reload-btn:active {
+  transform: scale(0.97);
+}
+.reload-btn.spinning svg {
+  animation: spin 0.5s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Toast Notifications
+   ═══════════════════════════════════════════════════════════ */
+.toast {
+  margin-top: 11px;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  min-height: 13px;
+  transition: color 0.3s;
+  letter-spacing: 0.03em;
+}
+.toast.ok  { color: var(--green); }
+.toast.err { color: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════
+   Info Section & Container States
+   ═══════════════════════════════════════════════════════════ */
+
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.info {
+  display: flex;
+  justify-content: space-between;
+}
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  gap: 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.content {
+  display: none;
+}
+
+.container.active {
+  .placeholder { display: none; }
+  .content     { display: block; }
+}
+
+/* hide the placeholder while waiting for permission grant */
+.perm-banner:not([hidden]) ~ #container .placeholder {
+  display: none;
+}

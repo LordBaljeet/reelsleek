@@ -1,0 +1,142 @@
+/* ── Volume container ── */
+
+.reelsleek-audio-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--control-bg);
+  padding: var(--control-padding);
+  border-radius: var(--control-radius);
+  overflow: hidden;
+  position: absolute;
+  z-index: 1000;
+  opacity: 0;
+  transition: var(--transition-opacity);
+}
+
+div:has(.reelsleek-audio-control):hover>.reelsleek-audio-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.reelsleek-volume-always-visible .reelsleek-audio-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Horizontal (default) */
+.reelsleek-audio-control[data-orientation="horizontal"] {
+  top: 10px;
+  left: 10px;
+  width: var(--control-size);
+  max-width: 300px;
+  transition: width var(--transition-expand);
+
+  &:hover {
+    width: 90%;
+  }
+
+  .reelsleek-slider-container {
+    width: 100%;
+    margin-right: 10px;
+  }
+
+  .reelsleek-volume-slider {
+    width: 100%;
+    height: 10px;
+  }
+}
+
+/* Vertical */
+.reelsleek-audio-control[data-orientation="vertical"] {
+  bottom: 20px;
+  right: 10px;
+  height: var(--control-size);
+  max-height: 150px;
+  flex-direction: column-reverse;
+  transition: height var(--transition-expand);
+
+  &:hover {
+    height: 90%;
+  }
+
+  .reelsleek-slider-container {
+    min-height: 30px;
+    height: 100%;
+    margin-top: 10px;
+  }
+
+  .reelsleek-volume-slider {
+    height: 100%;
+    width: 10px;
+  }
+}
+
+/* ── Range slider ── */
+
+.reelsleek-volume-slider {
+  border-radius: 5px;
+  background: #d3d3d3;
+}
+
+.reelsleek-volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--slider-thumb-size);
+  height: var(--slider-thumb-size);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+.reelsleek-volume-slider::-moz-range-thumb {
+  width: var(--slider-thumb-size);
+  height: var(--slider-thumb-size);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: none;
+}
+
+.reelsleek-volume-slider::-moz-range-progress {
+  background: #fff;
+  height: 100%;
+  width: 100%;
+  border-radius: var(--control-radius);
+}
+
+/* ── Volume button & icon ── */
+
+.reelsleek-mute-button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  height: var(--control-size);
+}
+
+.reelsleek-volume-icon {
+  height: var(--icon-size);
+}
+
+.reelsleek-vi-waves {
+  opacity: 1;
+  transition: var(--transition-opacity);
+}
+
+.reelsleek-vi-slash {
+  opacity: 0;
+  transition: var(--transition-opacity);
+}
+
+.reelsleek-mute-button.muted .reelsleek-vi-waves {
+  opacity: 0;
+}
+
+.reelsleek-mute-button.muted .reelsleek-vi-slash {
+  opacity: 1;
+}
+
+/* Hide Instagram's native audio button once we've taken over */
+div:has(> .reelsleek-audio-control)  div[role="group"] div>div[role="button"]:has(> svg),
+div:has(> .reelsleek-audio-control)  div[role="group"] div.html-div>button:has(> div > svg) {
+  display: none;
+}

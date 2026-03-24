@@ -1,0 +1,51 @@
+/* ── Theater mode toggle button ── */
+
+.reelsleek-theater-mode {
+  all: unset;
+  margin-bottom: 20px;
+  color: rgb(var(--ig-primary-icon));
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    transform 0.1s ease;
+}
+
+.reelsleek-theater-mode svg {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.reelsleek-theater-mode-off {
+  display: block;
+}
+
+.reelsleek-theater-mode-on {
+  display: none;
+}
+
+body.theater-mode-active .reelsleek-theater-mode-off {
+  display: none;
+}
+
+body.theater-mode-active .reelsleek-theater-mode-on {
+  display: block;
+}
+
+body.theater-mode-active div[role="tablist"],
+body.theater-mode-active div[tabindex="-1"]:has(div > div > div > [data-visualcompletion="ignore-dynamic"]),
+body.theater-mode-active div[class=""] > div > div.html-div {
+  display: none;
+}
+
+/* Force dialogs to render above the fullscreen element */
+:fullscreen dialog,
+:fullscreen [role="dialog"],
+:fullscreen div:has( > div > div > [role="dialog"]),
+:fullscreen .modal,
+:-webkit-full-screen dialog,
+:-webkit-full-screen [role="dialog"],
+:-webkit-full-screen div:has( > div > div > [role="dialog"]),
+:-webkit-full-screen .modal {
+  z-index: 2147483647;
+}

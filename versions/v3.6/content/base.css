@@ -1,0 +1,12 @@
+/* ── Shared design tokens ── */
+
+:root {
+  --slider-thumb-size: 15px;
+  --control-bg: rgba(82, 80, 80, 0.5);
+  --control-radius: 50px;
+  --control-padding: 5px;
+  --control-size: 30px;
+  --icon-size: 25px;
+  --transition-opacity: opacity 0.2s ease;
+  --transition-expand: 0.25s linear;
+}

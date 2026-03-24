@@ -1,0 +1,121 @@
+/* ── Shared design tokens ── */
+
+:root {
+  --slider-thumb-size: 15px;
+  --control-bg: rgba(82, 80, 80, 0.5);
+  --control-bg-pressed: rgba(82, 80, 80, 1);
+  --control-radius: 50px;
+  --control-padding: 5px;
+  --control-size: 30px;
+  --icon-size: 22px;
+  --transition-opacity: opacity 0.2s ease;
+  --transition-expand: 0.25s ease;
+}
+
+
+/* ── Toolbar ── */
+
+.reelsleek-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--control-bg);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: var(--control-radius);
+  overflow: hidden;
+  position: absolute;
+  z-index: 1000;
+  top: 10px;
+  right: 10px;
+  max-height: var(--control-size);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    max-height var(--transition-expand),
+    opacity 0.2s ease;
+
+  button {
+    width: var(--control-size);
+    height: var(--control-size);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    flex-shrink: 0;
+  }
+}
+
+/* ── Toggle button ── */
+
+.reelsleek-toolbar-logo {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  object-fit: contain;
+  display: block;
+}
+
+.reelsleek-toolbar:hover .reelsleek-toolbar-toggle {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ── Action button container ── */
+
+.reelsleek-toolbar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+  width: 100%;
+}
+
+/* ── Action buttons (fullscreen, theater, autoscroll) ── */
+
+.reelsleek-toolbar-container > button {
+  opacity: 0.55;
+  transition:
+    opacity 0.2s ease,
+    transform 0.1s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:active {
+    transform: scale(0.88);
+  }
+
+  &[aria-pressed="true"] {
+    opacity: 1;
+  }
+}
+
+/* ── Visibility ── */
+
+/* Show on hover over the video container */
+div:has(> .reelsleek-toolbar):hover > .reelsleek-toolbar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Expand on toolbar hover */
+.reelsleek-toolbar:hover {
+  max-height: 300px;
+}
+
+/* Always visible in fullscreen */
+:fullscreen .reelsleek-toolbar {
+  opacity: 1;
+  pointer-events: auto;
+}

@@ -1,0 +1,169 @@
+/* ── Volume container ── */
+
+.reelsleek-audio-control {
+  display: flex;
+  align-items: center;
+  background-color: var(--control-bg);
+  padding: var(--control-padding);
+  border-radius: var(--control-radius);
+  overflow: hidden;
+  position: absolute;
+  z-index: 1000;
+  opacity: 0;
+  transition: var(--transition-opacity);
+}
+
+div:has(.reelsleek-audio-control):hover>.reelsleek-audio-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.reelsleek-volume-always-visible .reelsleek-audio-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Horizontal (default) */
+.reelsleek-audio-control[data-orientation="horizontal"] {
+  top: 10px;
+  left: 10px;
+  width: var(--control-size);
+  max-width: 300px;
+  transition: width var(--transition-expand);
+}
+
+.reelsleek-audio-control[data-orientation="horizontal"]:hover {
+  width: 90%;
+}
+
+.reelsleek-audio-control[data-orientation="horizontal"] .reelsleek-slider-container {
+  width: 100%;
+  margin-right: 10px;
+}
+
+.reelsleek-audio-control[data-orientation="horizontal"] .reelsleek-volume-slider {
+  width: 100%;
+  height: 10px;
+}
+
+/* Vertical */
+.reelsleek-audio-control[data-orientation="vertical"] {
+  bottom: 20px;
+  right: 10px;
+  height: var(--control-size);
+  max-height: 150px;
+  flex-direction: column-reverse;
+  gap: 7px;
+  transition: height var(--transition-expand);
+}
+
+.reelsleek-audio-control[data-orientation="vertical"]:hover {
+  height: 90%;
+}
+
+.reelsleek-audio-control[data-orientation="vertical"] .reelsleek-slider-container {
+  min-height: 30px;
+  height: 100%;
+  margin-top: 10px;
+}
+
+.reelsleek-audio-control[data-orientation="vertical"] .reelsleek-volume-slider {
+  height: 100%;
+  width: 10px;
+}
+
+/* ── Range slider ── */
+
+.reelsleek-volume-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 5px;
+  background: #d3d3d3;
+}
+
+/* Chrome/Safari thumb */
+.reelsleek-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--slider-thumb-size);
+  height: var(--slider-thumb-size);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  margin-top: calc((10px - var(--slider-thumb-size)) / 2);
+}
+
+.reelsleek-volume-slider::-webkit-slider-thumb:hover,
+.reelsleek-volume-slider::-webkit-slider-thumb:active {
+  background: #fff;
+  box-shadow: none;
+}
+
+/* Firefox thumb */
+.reelsleek-volume-slider::-moz-range-thumb {
+  width: var(--slider-thumb-size);
+  height: var(--slider-thumb-size);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: none;
+}
+
+/* Firefox progress fill */
+.reelsleek-volume-slider::-moz-range-progress {
+  background: #fff;
+  height: 100%;
+  width: 100%;
+  border-radius: var(--control-radius);
+}
+
+/* Chrome/Safari track (horizontal) — progress fill via CSS variable */
+.reelsleek-audio-control[data-orientation="horizontal"] .reelsleek-volume-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(to right, #fff var(--slider-fill, 100%), #d3d3d3 var(--slider-fill, 100%));
+}
+
+/* Chrome/Safari track (vertical) — progress fill via CSS variable */
+.reelsleek-audio-control[data-orientation="vertical"] .reelsleek-volume-slider::-webkit-slider-runnable-track {
+  width: 10px;
+  border-radius: 5px;
+  background: linear-gradient(to top, #fff var(--slider-fill, 100%), #d3d3d3 var(--slider-fill, 100%));
+}
+
+/* ── Volume button & icon ── */
+
+.reelsleek-mute-button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  height: var(--control-size);
+}
+
+.reelsleek-volume-icon {
+  height: var(--icon-size);
+}
+
+.reelsleek-vi-waves {
+  opacity: 1;
+  transition: var(--transition-opacity);
+}
+
+.reelsleek-vi-slash {
+  opacity: 0;
+  transition: var(--transition-opacity);
+}
+
+.reelsleek-mute-button.muted .reelsleek-vi-waves {
+  opacity: 0;
+}
+
+.reelsleek-mute-button.muted .reelsleek-vi-slash {
+  opacity: 1;
+}
+
+/* Hide Instagram's native audio button once we've taken over */
+div:has(> .reelsleek-audio-control)  div[role="group"] div>div[role="button"]:has(> svg),
+div:has(> .reelsleek-audio-control)  div[role="group"] div.html-div>button:has(> div > svg) {
+  display: none;
+}

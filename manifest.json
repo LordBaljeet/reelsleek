@@ -1,0 +1,73 @@
+{
+  "manifest_version": 3,
+  "name": "ReelSleek",
+  "version": "3.6.2",
+  "description": "Adds persistent volume, precision seeking, and smart mute controls to Instagram on Firefox.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "optional_permissions": [
+    "webNavigation"
+  ],
+  "host_permissions": [],
+  "optional_host_permissions": [
+    "*://*.instagram.com/*"
+  ],
+  "icons": {
+    "48": "icons/logo-48.png"
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.instagram.com/*"
+      ],
+      "css": [
+        "content/base.css",
+        "content/audioControl.css",
+        "content/videoControl.css",
+        "content/autoscroll.css",
+        "content/theaterMode.css"
+      ],
+      "js": [
+        "content/shared.js",
+        "content/audioControl.js",
+        "content/videoControl.js",
+        "content/autoscroll.js",
+        "content/theaterMode.js",
+        "content/messaging.js",
+        "content/index.js"
+      ]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "instasound@addon.com",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/logo-no-bg.png"],
+      "matches": ["*://*.instagram.com/*"]
+    }
+  ],
+  "action": {
+    "default_icon": {
+      "48": "icons/logo-48.png"
+    },
+    "default_title": "ReelSleek",
+    "default_popup": "popup/index.html"
+  }
+}

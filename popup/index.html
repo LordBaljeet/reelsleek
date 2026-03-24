@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReelSleek</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <img
+          alt="logo"
+          src="../icons/logo-no-bg-325.png"
+          width="30"
+          height="30"
+          id="logo"
+        />
+      </div>
+      <div class="status-pill" id="statusPill">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">checking…</span>
+      </div>
+    </header>
+
+    <div class="perm-banner" id="permBanner">
+      <p>ReelSleek needs access to <strong>instagram.com</strong> to work.</p>
+      <button id="permBtn">Grant access</button>
+    </div>
+
+    <hr />
+
+    <div class="container" id="container">
+      <div class="content">
+        <p class="section-label">Slider orientation</p>
+
+        <div class="orient-toggle horizontal" id="orientToggle">
+          <button class="orient-btn" data-orient="horizontal" aria-label="Horizontal">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="3.5" width="12" height="2" rx="1" fill="currentColor" />
+              <rect x="1" y="8.5" width="7" height="2" rx="1" fill="currentColor" opacity=".4" />
+            </svg>
+            Horizontal
+          </button>
+
+          <button class="orient-btn" data-orient="vertical" aria-label="Vertical">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="3.5" y="1" width="2" height="12" rx="1" fill="currentColor" />
+              <rect x="8.5" y="4" width="2" height="7" rx="1" fill="currentColor" opacity=".4" />
+            </svg>
+            Vertical
+          </button>
+        </div>
+
+        <hr />
+
+        <p class="section-label">Visibility</p>
+
+        <div class="toggle-row">
+          <span>Volume slider</span>
+          <div class="vis-toggle" id="volumeVisToggle">
+            <button class="vis-btn active" data-vis="hover">On hover</button>
+            <button class="vis-btn" data-vis="always">Always</button>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <span>Seek bar</span>
+          <div class="vis-toggle" id="seekbarVisToggle">
+            <button class="vis-btn active" data-vis="hover">On hover</button>
+            <button class="vis-btn" data-vis="always">Always</button>
+          </div>
+        </div>
+
+        <hr />
+
+        <p class="section-label">Toolbar</p>
+
+        <div class="orient-toggle custom" id="toolbarModeToggle">
+          <button class="orient-btn" data-toolbar-mode="custom">Custom</button>
+          <button class="orient-btn" data-toolbar-mode="native">Native IG</button>
+        </div>
+
+        <hr />
+
+        <button class="reload-btn" id="reloadBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 2v6h-6" />
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+            <path d="M3 22v-6h6" />
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+          Reset Controls
+        </button>
+
+        <hr />
+
+        <div class="info-section section-label">
+          <div class="info">
+            <span>Current Volume:</span>
+            <span id="volume-state">10%</span>
+          </div>
+          <div class="info">
+            <span>Muted:</span>
+            <span id="mute-state">False</span>
+          </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+      </div>
+      <div class="placeholder">
+        <img src="../icons/undraw_counting-stars_1fur.svg" alt="nothing to do.." width="150px" />
+        <i>Nothing to see...</i>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+/* ── Theater mode button ── */
+
+.reelsleek-theater-mode svg { flex-shrink: 0; }
+
+/* Native Instagram toolbar mode */
+body:not(.reelsleek-custom-toolbar) .reelsleek-theater-mode {
+  all: unset;
+  margin-bottom: 20px;
+  opacity: 0.15;
+  color: rgb(var(--ig-primary-icon));
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    transform 0.1s ease;
+}
+
+body:not(.reelsleek-custom-toolbar) .reelsleek-theater-mode:active { transform: scale(0.88); }
+
+body:not(.reelsleek-custom-toolbar) .reelsleek-theater-mode svg {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+body:not(.reelsleek-custom-toolbar) .reelsleek-theater-mode[aria-pressed="true"] { opacity: 1; }
+
+/* ── Theater mode active: hide Instagram sidebar ── */
+
+body.theater-mode-active {
+  div[role="tablist"],
+  div[tabindex="-1"]:has(div > div > div > [data-visualcompletion="ignore-dynamic"]),
+  div[class=""] > div > div.html-div {
+    display: none;
+  }
+}
+
+/* Force dialogs to render above the fullscreen element */
+:fullscreen dialog,
+:fullscreen [role="dialog"],
+:fullscreen div:has( > div > div > [role="dialog"]),
+:fullscreen .modal {
+  z-index: 2147483647;
+}

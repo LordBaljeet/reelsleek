@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║  ReelSleek · Store Screenshot Template  v3                   ║
+║  Import: File → Import  (drag & drop onto Figma canvas)      ║
+╠══════════════════════════════════════════════════════════════╣
+║  EDITING GUIDE                                               ║
+║                                                              ║
+║  Text layers  (double-click to edit):                        ║
+║    Slide-Number    "01" "02" …                               ║
+║    Tag-Label       "VOLUME CONTROL" "SEEK BAR" …             ║
+║    Headline-Line-1  first line, white                        ║
+║    Headline-Line-2  second line, accent pink                 ║
+║    Body-Copy        2–3 line description                     ║
+║                                                              ║
+║  Pills:                                                      ║
+║    Duplicate any Pill-* group, edit the text inside         ║
+║    Resize its rect: width = (chars × 7) + 24                ║
+║                                                              ║
+║  Screenshot:                                                 ║
+║    Select "Screenshot-Fill-Target"                          ║
+║    Fill → Image → choose file → Scale: Fill                 ║
+║    Delete Placeholder-Hint-1 and Placeholder-Hint-2         ║
+║                                                              ║
+║  Accent glow colour per slide:                               ║
+║    Select "Glow-Right-Ellipse", change its fill colour      ║
+║    (keep opacity at 0.22)                                    ║
+║                                                              ║
+║  TOKENS                                                      ║
+║    BG #08080a   Accent #ff4d6d   Soft #ff8fa3      ║
+║    Font: Syne 800 (headlines)  DM Mono 400/500 (body)        ║
+╚══════════════════════════════════════════════════════════════╝
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1280" height="800"
+  viewBox="0 0 1280 800"
+  id="ReelSleek-Slide-06">
+
+  <defs>
+    <!-- Grid pattern -->
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none"
+        stroke="rgba(255,255,255,0.017)" stroke-width="1"/>
+    </pattern>
+
+    <!-- Gaussian blur for glow ellipses — Figma imports this correctly -->
+    <filter id="blur-xl" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="160"/>
+    </filter>
+    <filter id="blur-lg" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="130"/>
+    </filter>
+    <filter id="blur-halo" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+
+    <!-- Divider -->
+    <linearGradient id="divider-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="white" stop-opacity="0"/>
+      <stop offset="15%"  stop-color="white" stop-opacity="0.06"/>
+      <stop offset="85%"  stop-color="white" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Footer line -->
+    <linearGradient id="footer-grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ff4d6d" stop-opacity="0"/>
+      <stop offset="30%"  stop-color="#ff4d6d" stop-opacity="0.22"/>
+      <stop offset="50%"  stop-color="#ff8fa3" stop-opacity="0.22"/>
+      <stop offset="70%"  stop-color="#ff4d6d" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#ff4d6d" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Top accent edge on mockup -->
+    <linearGradient id="accent-edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ff4d6d" stop-opacity="0"/>
+      <stop offset="30%"  stop-color="#ff4d6d" stop-opacity="0.65"/>
+      <stop offset="65%"  stop-color="#ff8fa3" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#ff4d6d" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Bottom fade on mockup -->
+    <linearGradient id="mockup-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="72%" stop-color="#08080a" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#08080a" stop-opacity="0.62"/>
+    </linearGradient>
+
+    <clipPath id="mockup-clip">
+      <rect x="638" y="48" width="580" height="704" rx="12"/>
+    </clipPath>
+  </defs>
+
+  <!-- ── Background ─────────────────────────────────────── -->
+  <g id="Background">
+    <rect width="1280" height="800" fill="#08080a"/>
+  </g>
+
+  <!-- ── Grid Texture ───────────────────────────────────── -->
+  <g id="Grid-Texture">
+    <rect width="1280" height="800" fill="url(#grid)"/>
+  </g>
+
+  <!-- ── Ambient Glow Right ─────────────────────────────
+       Blurred ellipse = Figma-native gaussian glow.
+       To change colour per slide: select Glow-Right-Ellipse,
+       change fill colour (keep opacity ~0.55).           -->
+  <g id="Ambient-Glow-Right">
+    <ellipse id="Glow-Right-Ellipse"
+      cx="988" cy="400"
+      rx="160" ry="130"
+      fill="#ff4d6d" fill-opacity="0.8"
+      filter="url(#blur-xl)"/>
+  </g>
+
+  <!-- ── Ambient Glow Left ──────────────────────────────
+       Small warm glow in the top-left corner.            -->
+  <g id="Ambient-Glow-Left">
+    <ellipse id="Glow-Left-Ellipse"
+      cx="0" cy="0"
+      rx="120" ry="120"
+      fill="#ff4d6d" fill-opacity="0.5"
+      filter="url(#blur-lg)"/>
+  </g>
+
+  <!-- ── Vignette ───────────────────────────────────────
+       Dark radial overlay to frame the composition.
+       Built as four edge-gradient rects so Figma
+       renders it reliably.                               -->
+  <g id="Vignette">
+    <!-- top -->
+    <rect x="0" y="0" width="1280" height="180"
+      fill="url(#vig-top)" opacity="0.55"/>
+    <!-- bottom -->
+    <rect x="0" y="620" width="1280" height="180"
+      fill="url(#vig-bot)" opacity="0.55"/>
+    <!-- left -->
+    <rect x="0" y="0" width="180" height="800"
+      fill="url(#vig-left)" opacity="0.45"/>
+    <!-- right -->
+    <rect x="1100" y="0" width="180" height="800"
+      fill="url(#vig-right)" opacity="0.35"/>
+  </g>
+
+  <!-- vignette gradients (defined inline since they're simple) -->
+  <defs>
+    <linearGradient id="vig-top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="black" stop-opacity="1"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="vig-bot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="black" stop-opacity="0"/>
+      <stop offset="100%" stop-color="black" stop-opacity="1"/>
+    </linearGradient>
+    <linearGradient id="vig-left" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="black" stop-opacity="1"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="vig-right" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="black" stop-opacity="0"/>
+      <stop offset="100%" stop-color="black" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── Divider ────────────────────────────────────────── -->
+  <g id="Divider">
+    <rect x="596" y="70" width="1" height="660"
+      fill="url(#divider-grad)"/>
+  </g>
+
+  <!-- ════════════════════════════════════════════════════
+       LEFT COLUMN
+  ════════════════════════════════════════════════════ -->
+  <g id="Left-Column">
+
+    <g id="Meta-Row">
+      <text id="Slide-Number"
+        x="80" y="190"
+        font-family="DM Mono, Courier New, monospace"
+        font-size="11" font-weight="500"
+        fill="#ff4d6d" letter-spacing="0.14em"
+        opacity="0.9">06</text>
+
+      <rect id="Meta-Rule"
+        x="108" y="184"
+        width="22" height="1" fill="#44444e"/>
+
+      <text id="Tag-Label"
+        x="138" y="190"
+        font-family="DM Mono, Courier New, monospace"
+        font-size="10" font-weight="400"
+        fill="#44444e" letter-spacing="0.2em">FULL SCREEN</text>
+    </g>
+
+    <text id="Headline-Line-1"
+      x="80" y="294"
+      font-family="Syne, sans-serif"
+      font-size="62" font-weight="800"
+      fill="#eeeef0" letter-spacing="-0.035em">Go full screen.</text>
+
+    <text id="Headline-Line-2"
+      x="80" y="364"
+      font-family="Syne, sans-serif"
+      font-size="62" font-weight="800"
+      fill="#ff4d6d" letter-spacing="-0.035em">Instantly.</text>
+
+    <text id="Body-Copy"
+      x="80" y="400"
+      font-family="DM Mono, Courier New, monospace"
+      font-size="13" font-weight="400"
+      fill="rgba(238,238,240,0.44)">
+      <tspan x="80" dy="0">Native full screen on any Instagram video.</tspan>
+      <tspan x="80" dy="23">One click on the button, or just press F.</tspan>
+    </text>
+
+    <g id="Pills">
+      <g id="Pill-Press-F">
+        <rect x="80.0" y="574.0" width="73.0" height="26"
+          rx="5" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+        <text x="116.5" y="591.0"
+          font-family="DM Mono, Courier New, monospace" font-size="10" font-weight="500"
+          fill="rgba(238,238,240,0.6)" letter-spacing="0.04em" text-anchor="middle">Press F</text>
+      </g>
+      <g id="Pill-Double-click-to-enter">
+        <rect x="161.0" y="574.0" width="171.0" height="26"
+          rx="5" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+        <text x="246.5" y="591.0"
+          font-family="DM Mono, Courier New, monospace" font-size="10" font-weight="500"
+          fill="rgba(238,238,240,0.6)" letter-spacing="0.04em" text-anchor="middle">Double-click to enter</text>
+      </g>
+      <g id="Pill-Any-video-surface">
+        <rect x="340.0" y="574.0" width="143.0" height="26"
+          rx="5" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+        <text x="411.5" y="591.0"
+          font-family="DM Mono, Courier New, monospace" font-size="10" font-weight="500"
+          fill="rgba(238,238,240,0.6)" letter-spacing="0.04em" text-anchor="middle">Any video surface</text>
+      </g>
+    </g>
+
+    <text id="Wordmark"
+      x="80" y="748"
+      font-family="Syne, sans-serif"
+      font-size="10" font-weight="700"
+      fill="rgba(255,255,255,0.1)"
+      letter-spacing="0.2em">REELSLEEK</text>
+
+  </g>
+
+  <!-- ════════════════════════════════════════════════════
+       RIGHT COLUMN — MOCKUP
+  ════════════════════════════════════════════════════ -->
+  <g id="Right-Column">
+
+    <!-- Soft halo directly behind the mockup frame -->
+    <g id="Mockup-Halo">
+      <ellipse id="Mockup-Halo-Ellipse"
+        cx="928" cy="400"
+        rx="290" ry="352"
+        fill="#ff4d6d" fill-opacity="0.12"
+        filter="url(#blur-halo)"/>
+    </g>
+
+    <!--
+      SCREENSHOT PLACEHOLDER
+      ──────────────────────
+      1. Select "Screenshot-Fill-Target"
+      2. Fill panel → click swatch → Image → choose file
+      3. Scale mode: Fill
+      4. Delete Placeholder-Hint-1 + Placeholder-Hint-2
+    -->
+    <g id="Screenshot-Placeholder">
+      <rect id="Screenshot-Fill-Target"
+        x="638" y="48"
+        width="580" height="704"
+        rx="12"
+        fill="#0f0f12"
+        stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+
+      <text id="Placeholder-Hint-1"
+        x="928" y="390"
+        font-family="DM Mono, Courier New, monospace"
+        font-size="13" font-weight="500"
+        fill="rgba(255,255,255,0.2)" text-anchor="middle"
+        letter-spacing="0.06em">Replace with screenshot</text>
+
+      <text id="Placeholder-Hint-2"
+        x="928" y="414"
+        font-family="DM Mono, Courier New, monospace"
+        font-size="10" font-weight="400"
+        fill="rgba(255,255,255,0.12)" text-anchor="middle"
+        letter-spacing="0.05em">Select → Fill → Image</text>
+    </g>
+
+    <!-- Frame border overlay (keeps rounded corners crisp over image) -->
+    <g id="Frame-Border">
+      <rect x="638" y="48"
+        width="580" height="704"
+        rx="12" fill="none"
+        stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+    </g>
+
+    <!-- Thin accent line along the top edge of the frame -->
+    <g id="Top-Accent-Edge">
+      <rect x="638" y="48"
+        width="580" height="2"
+        rx="1" fill="url(#accent-edge)"/>
+    </g>
+
+    <!-- Gradient fade at bottom of mockup -->
+    <g id="Bottom-Fade">
+      <rect x="638" y="48"
+        width="580" height="704"
+        rx="12" fill="url(#mockup-fade)"
+        clip-path="url(#mockup-clip)"/>
+    </g>
+
+  </g>
+
+  <!-- ── Footer Line ────────────────────────────────────── -->
+  <g id="Footer-Line">
+    <rect x="0" y="798" width="1280" height="2"
+      fill="url(#footer-grad)"/>
+  </g>
+
+</svg>
