@@ -108,7 +108,7 @@ class TheaterMode {
             if (!toolbarContainer) return;
             toolbarContainer.appendChild(button);
         } else {
-            const parent = getNthParent(video, 7);
+            const parent = getNthParent(video, 11);
             if (!parent) return;
             const toolbar = parent.nextElementSibling;
             if (!toolbar) return;
@@ -128,7 +128,7 @@ class TheaterMode {
 
         // Find button in custom toolbar or native Instagram toolbar
         const button = video.parentElement.querySelector('.reelsleek-theater-mode')
-            ?? getNthParent(video, 7)?.nextElementSibling?.querySelector('.reelsleek-theater-mode');
+            ?? getNthParent(video, 11)?.nextElementSibling?.querySelector('.reelsleek-theater-mode');
         button?.remove();
 
         delete video.dataset.reelsleekTheaterModeAttached;

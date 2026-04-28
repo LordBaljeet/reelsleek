@@ -13,17 +13,47 @@
 
 .reelsleek-seekbar {
   appearance: none;
+  -webkit-appearance: none;
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   height: 5px;
-  background: #6b6b6ba2;
+  /* Gradient fill: --seek-fill is updated by JS as the video plays */
+  background: linear-gradient(to right, #fff var(--seek-fill, 0%), #6b6b6ba2 var(--seek-fill, 0%));
   outline: none;
   cursor: pointer;
   margin: 0;
+  z-index: 1000;
 }
 
+/* Chrome: transparent track so the element gradient background shows through */
+.reelsleek-seekbar::-webkit-slider-runnable-track {
+  height: 100%;
+  border: none;
+  background: transparent;
+}
+
+/* Chrome: invisible thumb (seekbar uses a thin progress bar, not a visible thumb) */
+.reelsleek-seekbar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  opacity: 0;
+  border-radius: 0;
+  width: 2px;
+  height: 14px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+/* Firefox: transparent track so the element gradient background shows through */
+.reelsleek-seekbar::-moz-range-track {
+  height: 100%;
+  background: transparent;
+}
+
+/* Firefox thumb */
 .reelsleek-seekbar::-moz-range-thumb {
   opacity: 0;
   border-radius: 0;
@@ -32,6 +62,7 @@
   border: none;
 }
 
+/* Firefox: belt-and-suspenders fill on top of the gradient */
 .reelsleek-seekbar::-moz-range-progress {
   background: #fff;
   height: 100%;
@@ -43,7 +74,7 @@
 }
 
 /* Show on parent hover */
-div:has(.reelsleek-video-control):hover > .reelsleek-video-control {
+div:has(.reelsleek-video-control):hover>.reelsleek-video-control {
   opacity: 1;
 }
 
@@ -54,6 +85,10 @@ body.reelsleek-seekbar-always-visible .reelsleek-video-control {
 /* Show thumb + full opacity when paused */
 .reelsleek-video-control[data-show-paused="true"] {
   opacity: 1;
+
+  .reelsleek-seekbar::-webkit-slider-thumb {
+    opacity: 1;
+  }
 
   .reelsleek-seekbar::-moz-range-thumb {
     opacity: 1;
@@ -77,7 +112,7 @@ body.reelsleek-seekbar-always-visible .reelsleek-video-control {
   transition: var(--transition-opacity);
 }
 
-div:has(.reelsleek-fullscreen-container):hover > .reelsleek-fullscreen-container {
+div:has(.reelsleek-fullscreen-container):hover>.reelsleek-fullscreen-container {
   opacity: 1;
   pointer-events: auto;
 }
@@ -94,15 +129,20 @@ div:has(.reelsleek-fullscreen-container):hover > .reelsleek-fullscreen-container
   color: #fff;
 }
 
-.reelsleek-expand-icon   { display: block; }
-.reelsleek-collapse-icon { display: none;  }
+.reelsleek-expand-icon {
+  display: block;
+}
+
+.reelsleek-collapse-icon {
+  display: none;
+}
 
 /* ── Fullscreen mode overrides ── */
 
 div:has(> div > video):fullscreen {
   padding: 10px 0;
 
-  > div {
+  >div {
     width: fit-content;
     position: relative;
     margin: auto;
@@ -113,7 +153,48 @@ div:has(> div > video):fullscreen {
     width: fit-content;
   }
 
-  .reelsleek-fullscreen-container { opacity: 1; }
-  .reelsleek-expand-icon          { display: none;  }
-  .reelsleek-collapse-icon        { display: block; }
+  .reelsleek-fullscreen-container {
+    opacity: 1;
+  }
+
+  .reelsleek-expand-icon {
+    display: none;
+  }
+
+  .reelsleek-collapse-icon {
+    display: block;
+  }
+}
+
+/* ── Play container ── */
+
+.reelsleek-play-container {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  z-index: 1000;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transition: var(--transition-opacity);
+}
+
+/* ── Fullscreen button ── */
+
+.reelsleek-play-button {
+  display: none;
+}
+
+.reelsleek-play-container[data-show-paused="true"] .reelsleek-play-button {
+  display: inherit;
+  width: var(--control-size-large);
+  height: var(--control-size-large);
+  background-color: var(--control-bg);
+  padding: var(--control-padding-large);
+  border-radius: var(--control-radius);
+  margin: auto;
+  overflow: hidden;
+  border: none;
+  cursor: pointer;
+  color: #fff;
 }

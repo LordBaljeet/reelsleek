@@ -108,9 +108,11 @@ class AudioControl {
   static #findNativeMuteButton(video) {
     if (!VideoControl.currentlyPlayingVideo && !video) return null;
     const targetVideo = video || VideoControl.currentlyPlayingVideo;
-    const svg = targetVideo.parentElement?.querySelector(
+    const targetDiv = getNthParent(targetVideo, 7);
+    const svg = targetDiv.parentElement?.querySelector(
       'div[role="group"] div > div[role="button"] > svg, div[role="group"] div.html-div > button > div > svg',
     );
+    console.debug('[AudioControl] found this svg for native mute button', svg);
     if (!svg) return;
     return svg.closest('button, [role="button"]');
   }
@@ -123,6 +125,7 @@ class AudioControl {
     const button = this.#findNativeMuteButton();
     if (!button) return;
     button.click();
+    console.debug('[AudioControl] clicking native mute button ', button);
   }
 
   /**
@@ -307,15 +310,20 @@ class AudioControl {
     slider.value = this.muted ? 0 : this.volume * 100;
     slider.setAttribute("orient", this.orientation);
 
+    const updateSliderFill = (s) => s.style.setProperty('--slider-fill', s.value + '%');
+    updateSliderFill(slider);
+
     // ── Setup Events that affect volume slider ────────────────────────────────
     {
       const sliderSubscriber = new EventSubscriber(slider);
       sliderSubscriber.subscribe(this.#Event.VOLUME_CHANGE, () => {
         slider.value = this.volume * 100;
+        updateSliderFill(slider);
       })
       sliderSubscriber.subscribe(this.#Event.MUTE_CHANGE, () => {
         if (this.muted) slider.value = 0;
         else slider.value = this.volume * 100;
+        updateSliderFill(slider);
       })
       sliderSubscriber.subscribe(this.#Event.ORIENT_CHANGE, () => {
         slider.setAttribute("orient", this.orientation);
@@ -337,6 +345,7 @@ class AudioControl {
 
     slider.addEventListener("input", (e) => {
       e.stopPropagation();
+      updateSliderFill(slider);
       this.#setVolume(slider.value / 100);
     });
     slider.addEventListener("click", (e) => e.stopPropagation());
