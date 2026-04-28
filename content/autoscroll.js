@@ -139,7 +139,7 @@ class AutoScroll {
       if (!toolbarContainer) return;
       toolbarContainer.appendChild(button);
     } else {
-      const parent = getNthParent(video, 7);
+      const parent = getNthParent(video, 11);
       if (!parent) return;
       const toolbar = parent.nextElementSibling;
       if (!toolbar) return;
@@ -171,7 +171,7 @@ class AutoScroll {
 
     // Find button in custom toolbar or native Instagram toolbar
     const button = video.parentElement.querySelector('.reelsleek-autoscroll')
-      ?? getNthParent(video, 7)?.nextElementSibling?.querySelector('.reelsleek-autoscroll');
+      ?? getNthParent(video, 11)?.nextElementSibling?.querySelector('.reelsleek-autoscroll');
     button?.remove();
 
     delete video.dataset.reelsleekAutoscrollAttached;

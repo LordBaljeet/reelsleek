@@ -1,3 +1,7 @@
+if (typeof globalThis.browser === 'undefined') {
+  globalThis.browser = chrome;
+}
+
 const IG_ORIGIN = "*://*.instagram.com/*";
 
 async function hasPermission() {

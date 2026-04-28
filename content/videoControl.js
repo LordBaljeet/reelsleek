@@ -34,19 +34,27 @@ class VideoControl {
   `;
 
   static #FULLSCREEN_HTML = `
-  <button class="reelsleek-fullscreen-button" aria-label="Toggle fullscreen" title="Toggle fullscreen (F)">
-    <svg class="reelsleek-expand-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
-      <path d="M280-280h120q17 0 28.5 11.5T440-240q0 17-11.5 28.5T400-200H240q-17 0-28.5-11.5T200-240v-160q0-17 11.5-28.5T240-440q17 0 28.5 11.5T280-400v120Zm400-400H560q-17 0-28.5-11.5T520-720q0-17 11.5-28.5T560-760h160q17 0 28.5 11.5T760-720v160q0 17-11.5 28.5T720-520q-17 0-28.5-11.5T680-560v-120Z"/>
-    </svg>
-    <svg class="reelsleek-collapse-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
-      <path d="M360-360H240q-17 0-28.5-11.5T200-400q0-17 11.5-28.5T240-440h160q17 0 28.5 11.5T440-400v160q0 17-11.5 28.5T400-200q-17 0-28.5-11.5T360-240v-120Zm240-240h120q17 0 28.5 11.5T760-560q0 17-11.5 28.5T720-520H560q-17 0-28.5-11.5T520-560v-160q0-17 11.5-28.5T560-760q17 0 28.5 11.5T600-720v120Z"/>
-    </svg>
-  </button>
-`;
+    <button class="reelsleek-fullscreen-button" aria-label="Toggle fullscreen" title="Toggle fullscreen (F)">
+      <svg class="reelsleek-expand-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
+        <path d="M280-280h120q17 0 28.5 11.5T440-240q0 17-11.5 28.5T400-200H240q-17 0-28.5-11.5T200-240v-160q0-17 11.5-28.5T240-440q17 0 28.5 11.5T280-400v120Zm400-400H560q-17 0-28.5-11.5T520-720q0-17 11.5-28.5T560-760h160q17 0 28.5 11.5T760-720v160q0 17-11.5 28.5T720-520q-17 0-28.5-11.5T680-560v-120Z"/>
+      </svg>
+      <svg class="reelsleek-collapse-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
+        <path d="M360-360H240q-17 0-28.5-11.5T200-400q0-17 11.5-28.5T240-440h160q17 0 28.5 11.5T440-400v160q0 17-11.5 28.5T400-200q-17 0-28.5-11.5T360-240v-120Zm240-240h120q17 0 28.5 11.5T760-560q0 17-11.5 28.5T720-520H560q-17 0-28.5-11.5T520-560v-160q0-17 11.5-28.5T560-760q17 0 28.5 11.5T600-720v120Z"/>
+      </svg>
+    </button>
+  `;
+
+  static #PLAY_HTML = `
+    <button class="reelsleek-play-button" aria-label="Toggle play/pause" title="Toggle play/pause (P)">
+      <svg class="reelsleek-play-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>
+      </svg>
+    </button>
+  `;
 
   static setFullscreen(on) {
     this.fullscreenOn = on;
-    if(!on && document.fullscreenElement) document.exitFullscreen();
+    if (!on && document.fullscreenElement) document.exitFullscreen();
   }
 
   /**
@@ -96,7 +104,7 @@ class VideoControl {
    */
   static #attachKeybinds() {
     document.body.addEventListener("keydown", (e) => {
-      if(isInput()) return;;
+      if (isInput()) return;;
 
       switch (e.code) {
         case "ArrowRight":
@@ -176,6 +184,7 @@ class VideoControl {
       e.stopPropagation();
       if (!isFinite(video.duration)) return;
       video.currentTime = video.duration * (seekbar.value / 100);
+      seekbar.style.setProperty('--seek-fill', seekbar.value + '%');
     });
 
     seekbar.addEventListener("click", (e) => e.stopPropagation());
@@ -184,20 +193,8 @@ class VideoControl {
     const timeupdateListener = () => {
       if (isSeeking || !isFinite(video.duration)) return;
       seekbar.value = `${(video.currentTime / video.duration) * 100}`;
+      seekbar.style.setProperty('--seek-fill', seekbar.value + '%');
     };
-
-    const playListener = () => {
-      seekbarContainer.dataset.showPaused = "false";
-      this.setCurrentlyPlayingVideo(video);
-    };
-
-    const pauseListener = () => {
-      seekbarContainer.dataset.showPaused = "true";
-    };
-
-    video.addEventListener("timeupdate", timeupdateListener);
-    video.addEventListener("play", playListener);
-    video.addEventListener("pause", pauseListener);
 
     if (ToolbarMode.isCustom()) {
       const toolbarContainer = video.parentElement.querySelector('.reelsleek-toolbar-container');
@@ -219,17 +216,41 @@ class VideoControl {
       video.parentElement.prepend(fullscreenContainer);
     }
 
-    const presentationEl = video.parentElement.querySelector('[role="presentation"]');
-    const dblclickListener = () => this.#toggleFullscreen(video);
-    presentationEl?.addEventListener("dblclick", dblclickListener);
+    const playContainer = document.createElement("div");
+    playContainer.className = 'reelsleek-play-container';
+    appendParsedHTML(playContainer, this.#PLAY_HTML);
+    
+    playContainer.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      this.#toggleFullscreen(video);
+    })
+    playContainer.addEventListener("click", (e) => {
+      e.stopPropagation();
+      video.paused ? video.play() : video.pause();
+    })
+    
+    video.parentElement.prepend(playContainer);
+
+    const playListener = () => {
+      seekbarContainer.dataset.showPaused = "false";
+      playContainer.dataset.showPaused = "false";
+      this.setCurrentlyPlayingVideo(video);
+    };
+
+    const pauseListener = () => {
+      seekbarContainer.dataset.showPaused = "true";
+      playContainer.dataset.showPaused = "true";
+    };
+
+    video.addEventListener("timeupdate", timeupdateListener);
+    video.addEventListener("play", playListener);
+    video.addEventListener("pause", pauseListener);
 
     // Store all listeners in WeakMap for cleanup
     this.#videoListeners.set(video, {
       timeupdate: timeupdateListener,
       play: playListener,
       pause: pauseListener,
-      presentationEl: presentationEl,
-      dblclick: dblclickListener
     });
   }
 
@@ -257,6 +278,9 @@ class VideoControl {
 
     // Remove seekbar container
     video.parentElement.querySelector('.reelsleek-video-control')?.remove();
+    
+    // Remove play container
+    video.parentElement.querySelector('.reelsleek-play-container')?.remove();
 
     // Remove fullscreen button (custom toolbar) or standalone container (native mode)
     video.parentElement.querySelector('.reelsleek-fullscreen-button')?.remove();

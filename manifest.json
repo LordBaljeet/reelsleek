@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ReelSleek",
   "version": "3.6.2",
-  "description": "Adds persistent volume, precision seeking, and smart mute controls to Instagram on Firefox.",
+  "description": "Adds persistent volume, precision seeking, and smart mute controls to Instagram Reels.",
   "permissions": [
     "storage",
     "tabs"
@@ -18,6 +18,7 @@
     "48": "icons/logo-48.png"
   },
   "background": {
+    "service_worker": "background.js",
     "scripts": [
       "background.js"
     ],
@@ -36,6 +37,7 @@
         "content/theaterMode.css"
       ],
       "js": [
+        "compat.js",
         "content/shared.js",
         "content/audioControl.js",
         "content/videoControl.js",
