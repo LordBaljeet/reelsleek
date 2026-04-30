@@ -31,6 +31,12 @@
     VideoControl.attach(video);
     TheaterMode.attach(video);
     AutoScroll.attach(video);
+    //removing reels redirect from home page.
+    const closestLink = video.closest('a');
+    if(closestLink && closestLink.href.includes("reels/")) {
+      closestLink.href = "javascript:void(0);"
+      closestLink.draggable = false;
+    }
   }
 
   observer.observe(document.body, { childList: true, subtree: true });
