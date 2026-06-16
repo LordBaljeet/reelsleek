@@ -24,7 +24,8 @@
   });
 
   function handleVideo(video) {
-    if (video.src && !video.src.startsWith("blob")) return;
+    if (video.src && (!video.src.startsWith("blob") || video.src.includes("giphy.com"))) return;
+    if(video.closest('[role="none')) return; // Skip gifs in embedded chats
     VideoControl.setCurrentlyPlayingVideo(video, true);
     AudioControl.attach(video);
     attachToolbar(video);

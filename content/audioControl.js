@@ -108,13 +108,62 @@ class AudioControl {
   static #findNativeMuteButton(video) {
     if (!VideoControl.currentlyPlayingVideo && !video) return null;
     const targetVideo = video || VideoControl.currentlyPlayingVideo;
-    const targetDiv = getNthParent(targetVideo, 7);
-    const svg = targetDiv.parentElement?.querySelector(
+    const targetDiv = getNthParent(targetVideo, 8);
+    const svg = targetDiv.querySelector(
       'div[role="group"] div > div[role="button"] > svg, div[role="group"] div.html-div > button > div > svg',
     );
     console.debug('[AudioControl] found this svg for native mute button', svg);
     if (!svg) return;
     return svg.closest('button, [role="button"]');
+  }
+
+  static #findNativeVolumeSlider(video) {
+    if (!VideoControl.currentlyPlayingVideo && !video) return null;
+    const targetVideo = video || VideoControl.currentlyPlayingVideo;
+    const targetDiv = getNthParent(targetVideo, 8);
+    const slider = targetDiv.querySelector(
+      'div[role="group"] div > div[role="button"] > div[role="slider"] > div > div > div',
+    );
+    console.debug('[AudioControl] found this slider for native volume slider', slider);
+    if (!slider) return;
+    return slider;
+  }
+
+  static async #syncNativeVolumeSlider(targetVolume, video) {
+    // The mute/unmute button that triggers the slider on hover
+    const button = this.#findNativeMuteButton(video);
+
+    if (!button) {
+      console.error('[AudioControl] Button not found');
+      return;
+    }
+
+    // Trigger hover to make slider appear
+    button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    button.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+    // Wait for the slider to become visible
+    await new Promise(r => setTimeout(r, 20));
+
+    const slider = this.#findNativeVolumeSlider(video);
+    if (!slider) {
+      console.error('[AudioControl] Slider not found after hover');
+      return;
+    }
+
+    const rect = slider.getBoundingClientRect();
+    console.debug('[AudioControl] Slider rect:', rect);
+
+    const targetY = rect.bottom - (rect.height * targetVolume);
+    const centerX = rect.left + rect.width / 2;
+    console.debug(`[AudioControl] Clicking at X:${centerX}, Y:${targetY} for volume ${targetVolume * 100}%`);
+
+    slider.dispatchEvent(new MouseEvent('click', {
+      clientX: centerX,
+      clientY: targetY,
+      bubbles: true,
+      cancelable: true,
+    }));
   }
 
   /**
@@ -155,6 +204,7 @@ class AudioControl {
   static #setMuted(muted) {
     this.muted = muted;
     this.#clickNativeMuteButton();
+    console.debug('[AudioControl] Setting muted state to:', muted);
     this.#eventsPublisher.publish(this.#Event.MUTE_CHANGE);
     VideoControl.currentlyPlayingVideo.volume = this.volume
     VideoControl.currentlyPlayingVideo.muted = this.muted
@@ -164,10 +214,10 @@ class AudioControl {
    * Toggles the mute state. If unmuting with zero volume, sets volume to 10%.
    * @private
    */
-  static #toggleMute() {
+  static async #toggleMute() {
     this.#setMuted(!this.muted);
     if (!this.muted && this.volume == 0) {
-      this.#setVolume(0.1);
+      await this.#setVolume(0.1);
     }
   }
 
@@ -176,13 +226,14 @@ class AudioControl {
    * @param {number} volume - Volume level (0.0 to 1.0)
    * @private
    */
-  static #setVolume(volume) {
+  static async #setVolume(volume) {
     this.volume = volume;
     if (this.volume > 0 && this.muted) {
       this.#toggleMute();
     } else if (this.volume === 0 && !this.muted) {
       this.#toggleMute();
     }
+    await this.#syncNativeVolumeSlider(this.volume);
     this.#eventsPublisher.publish(this.#Event.VOLUME_CHANGE);
     this.#saveStates();
     VideoControl.currentlyPlayingVideo.volume = this.volume
@@ -249,7 +300,7 @@ class AudioControl {
    */
   static #attachKeybinds() {
     document.body.addEventListener("keydown", (e) => {
-      if(isInput()) return;
+      if (isInput()) return;
 
       switch (e.code) {
         case "KeyM":
@@ -343,16 +394,16 @@ class AudioControl {
       this.#eventsPublisher.addSubscriber(buttonSubscriber);
     }
 
-    slider.addEventListener("input", (e) => {
+    slider.addEventListener("input", async (e) => {
       e.stopPropagation();
       updateSliderFill(slider);
-      this.#setVolume(slider.value / 100);
+      await this.#setVolume(slider.value / 100);
     });
     slider.addEventListener("click", (e) => e.stopPropagation());
 
-    button.addEventListener("click", (e) => {
+    button.addEventListener("click", async (e) => {
       e.stopPropagation();
-      this.#toggleMute();
+      await this.#toggleMute();
     });
 
     // Store event listener for cleanup

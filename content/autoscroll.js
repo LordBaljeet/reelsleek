@@ -25,6 +25,8 @@ class AutoScroll {
     "autoscrollKey": "reelsleek-autoscroll-enabled",
   }
 
+  static #ToolbarDepth = 12;
+
   /**
    * Sets the autoscroll state and persists the preference.
    * @param {boolean} enabled - Whether autoscroll should be enabled
@@ -137,12 +139,14 @@ class AutoScroll {
     if (ToolbarMode.isCustom()) {
       const toolbarContainer = video.parentElement.querySelector('.reelsleek-toolbar-container');
       if (!toolbarContainer) return;
+      if(toolbarContainer.querySelector('.reelsleek-autoscroll')) return;
       toolbarContainer.appendChild(button);
     } else {
-      const parent = getNthParent(video, 11);
+      const parent = getNthParent(video, this.#ToolbarDepth);
       if (!parent) return;
       const toolbar = parent.nextElementSibling;
       if (!toolbar) return;
+      if(toolbar.querySelector('.reelsleek-autoscroll')) return;
       const children = [...toolbar.children];
       toolbar.insertBefore(button, children[children.length - 2]);
     }
@@ -171,7 +175,7 @@ class AutoScroll {
 
     // Find button in custom toolbar or native Instagram toolbar
     const button = video.parentElement.querySelector('.reelsleek-autoscroll')
-      ?? getNthParent(video, 11)?.nextElementSibling?.querySelector('.reelsleek-autoscroll');
+      ?? getNthParent(video, this.#ToolbarDepth)?.nextElementSibling?.querySelector('.reelsleek-autoscroll');
     button?.remove();
 
     delete video.dataset.reelsleekAutoscrollAttached;

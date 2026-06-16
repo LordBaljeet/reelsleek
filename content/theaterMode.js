@@ -16,6 +16,7 @@ class TheaterMode {
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 8c0-2.828 0-4.243.879-5.121C7.757 2 9.172 2 12 2s4.243 0 5.121.879C18 3.757 18 5.172 18 8v8c0 2.828 0 4.243-.879 5.121C16.243 22 14.828 22 12 22s-4.243 0-5.121-.879C6 20.243 6 18.828 6 16z"/><path stroke-linecap="round" d="M21 4.5v15M3 4.5v15" opacity="0.5"/></g></svg>
     `
 
+    static #ToolbarDepth = 12;
     /**
      * Sets the autoscroll state and persists the preference.
      * @param {boolean} enabled - Whether autoscroll should be enabled
@@ -106,12 +107,14 @@ class TheaterMode {
         if (ToolbarMode.isCustom()) {
             const toolbarContainer = video.parentElement.querySelector('.reelsleek-toolbar-container');
             if (!toolbarContainer) return;
+            if(toolbarContainer.querySelector('.reelsleek-theater-mode')) return;
             toolbarContainer.appendChild(button);
         } else {
-            const parent = getNthParent(video, 11);
+            const parent = getNthParent(video, this.#ToolbarDepth);
             if (!parent) return;
             const toolbar = parent.nextElementSibling;
             if (!toolbar) return;
+            if(toolbar.querySelector('.reelsleek-theater-mode')) return;
             const children = [...toolbar.children];
             toolbar.insertBefore(button, children[children.length - 2]);
         }
@@ -128,7 +131,7 @@ class TheaterMode {
 
         // Find button in custom toolbar or native Instagram toolbar
         const button = video.parentElement.querySelector('.reelsleek-theater-mode')
-            ?? getNthParent(video, 11)?.nextElementSibling?.querySelector('.reelsleek-theater-mode');
+            ?? getNthParent(video, this.#ToolbarDepth)?.nextElementSibling?.querySelector('.reelsleek-theater-mode');
         button?.remove();
 
         delete video.dataset.reelsleekTheaterModeAttached;
