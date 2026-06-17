@@ -117,55 +117,6 @@ class AudioControl {
     return svg.closest('button, [role="button"]');
   }
 
-  static #findNativeVolumeSlider(video) {
-    if (!VideoControl.currentlyPlayingVideo && !video) return null;
-    const targetVideo = video || VideoControl.currentlyPlayingVideo;
-    const targetDiv = getNthParent(targetVideo, 8);
-    const slider = targetDiv.querySelector(
-      'div[role="group"] div > div[role="button"] > div[role="slider"] > div > div > div',
-    );
-    console.debug('[AudioControl] found this slider for native volume slider', slider);
-    if (!slider) return;
-    return slider;
-  }
-
-  static async #syncNativeVolumeSlider(targetVolume, video) {
-    // The mute/unmute button that triggers the slider on hover
-    const button = this.#findNativeMuteButton(video);
-
-    if (!button) {
-      console.error('[AudioControl] Button not found');
-      return;
-    }
-
-    // Trigger hover to make slider appear
-    button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-    button.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-
-    // Wait for the slider to become visible
-    await new Promise(r => setTimeout(r, 20));
-
-    const slider = this.#findNativeVolumeSlider(video);
-    if (!slider) {
-      console.error('[AudioControl] Slider not found after hover');
-      return;
-    }
-
-    const rect = slider.getBoundingClientRect();
-    console.debug('[AudioControl] Slider rect:', rect);
-
-    const targetY = rect.bottom - (rect.height * targetVolume);
-    const centerX = rect.left + rect.width / 2;
-    console.debug(`[AudioControl] Clicking at X:${centerX}, Y:${targetY} for volume ${targetVolume * 100}%`);
-
-    slider.dispatchEvent(new MouseEvent('click', {
-      clientX: centerX,
-      clientY: targetY,
-      bubbles: true,
-      cancelable: true,
-    }));
-  }
-
   /**
    * Clicks Instagram's native mute button if found.
    * @private
@@ -233,7 +184,7 @@ class AudioControl {
     } else if (this.volume === 0 && !this.muted) {
       this.#toggleMute();
     }
-    await this.#syncNativeVolumeSlider(this.volume);
+    // await this.#syncNativeVolumeSlider(this.volume);
     this.#eventsPublisher.publish(this.#Event.VOLUME_CHANGE);
     this.#saveStates();
     VideoControl.currentlyPlayingVideo.volume = this.volume
@@ -413,6 +364,20 @@ class AudioControl {
     };
     video.addEventListener('play', playListener);
     this.#videoListeners.set(video, playListener);
+
+    // Sync video volume changes back to AudioControl state
+    const volumeChangeListener = () => {
+      if (video.volume !== this.volume) {
+        console.debug('[AudioControl] video volume changed externally, syncing back from', video.volume, 'to', this.volume);
+        video.volume = this.volume;
+      }
+      if (video.muted !== this.muted) {
+        console.debug('[AudioControl] video muted state changed externally, syncing back from', video.muted, 'to', this.muted);
+        video.muted = this.muted;
+      }
+    };
+    video.addEventListener('volumechange', volumeChangeListener);
+    this.#videoListeners.set(video, volumeChangeListener);
 
     video.dataset.reelsleekAudioControlAttached = "true";
   }

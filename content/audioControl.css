@@ -164,6 +164,5 @@ body.reelsleek-volume-always-visible .reelsleek-audio-control {
 div[data-instancekey],
 div:has(> .reelsleek-audio-control)  div[role="group"] div>div[role="button"]:has(> svg),
 div:has(> .reelsleek-audio-control)  div[role="group"] div.html-div>button:has(> div > svg) {
-  /* display: none; */
-  visibility: hidden;
+  display: none;
 }
