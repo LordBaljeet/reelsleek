@@ -25,7 +25,7 @@
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border-radius: var(--control-radius);
-  overflow: hidden;
+  overflow-y: clip;
   position: absolute;
   z-index: 1000;
   top: 10px;
@@ -85,7 +85,7 @@
 
 /* ── Action buttons (fullscreen, theater, autoscroll) ── */
 
-.reelsleek-toolbar-container > button {
+.reelsleek-toolbar-container > button, .reelsleek-toolbar-container div > button {
   opacity: 0.55;
   transition:
     opacity 0.2s ease,

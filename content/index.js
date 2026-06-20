@@ -1,3 +1,24 @@
+
+const handleHomePageVideo = (video) => {
+  //if we are not on the home page, return
+  if (window.location.pathname != "/") return;
+
+  //fix clicking on video on home page redirecting to reels page.
+  const closestLink = video.closest('a');
+  if (!closestLink || !closestLink.href.includes("reels/")) return;
+
+  closestLink.href = "javascript:void(0);"
+  closestLink.draggable = false;
+
+  //fix move author name and profile picture to the top of the video on home page.
+  const authorContainer = closestLink.previousElementSibling;
+  if (!authorContainer) return;
+  authorContainer.style.position = 'initial';
+  authorContainer.style.background = 'none';
+  authorContainer.parentElement.style.background = 'none';
+  
+}
+
 (async () => {
   await ToolbarMode.setup();
   await AudioControl.setup();
@@ -26,7 +47,7 @@
 
   function handleVideo(video) {
     if (video.src && (!video.src.startsWith("blob") || video.src.includes("giphy.com"))) return;
-    if(video.closest('[role="none')) return; // Skip gifs in embedded chats
+    if (video.closest('[role="none')) return; // Skip gifs in embedded chats
     VideoControl.setCurrentlyPlayingVideo(video, true);
     AudioControl.attach(video);
     attachToolbar(video);
@@ -34,12 +55,8 @@
     AutoScroll.attach(video);
     TheaterMode.attach(video);
     Rotate.attach(video);
-    //removing reels redirect from home page.
-    const closestLink = video.closest('a');
-    if(closestLink && closestLink.href.includes("reels/")) {
-      closestLink.href = "javascript:void(0);"
-      closestLink.draggable = false;
-    }
+
+    handleHomePageVideo(video);
   }
 
   observer.observe(document.body, { childList: true, subtree: true });
