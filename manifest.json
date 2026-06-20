@@ -34,7 +34,8 @@
         "content/audioControl.css",
         "content/videoControl.css",
         "content/autoscroll.css",
-        "content/theaterMode.css"
+        "content/theaterMode.css",
+        "content/rotate.css"
       ],
       "js": [
         "compat.js",
@@ -43,6 +44,7 @@
         "content/videoControl.js",
         "content/autoscroll.js",
         "content/theaterMode.js",
+        "content/rotate.js",
         "content/messaging.js",
         "content/index.js"
       ]

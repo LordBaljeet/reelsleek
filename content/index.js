@@ -2,8 +2,9 @@
   await ToolbarMode.setup();
   await AudioControl.setup();
   await VideoControl.setup();
-  await TheaterMode.setup();
   await AutoScroll.setup();
+  await TheaterMode.setup();
+  await Rotate.setup();
   getCleanVideos().forEach(video => handleVideo(video));
 
   // Watch for dynamically added videos (Instagram is a SPA)
@@ -30,8 +31,9 @@
     AudioControl.attach(video);
     attachToolbar(video);
     VideoControl.attach(video);
-    TheaterMode.attach(video);
     AutoScroll.attach(video);
+    TheaterMode.attach(video);
+    Rotate.attach(video);
     //removing reels redirect from home page.
     const closestLink = video.closest('a');
     if(closestLink && closestLink.href.includes("reels/")) {
