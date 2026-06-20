@@ -86,12 +86,12 @@ class Rotate {
             if(e.metaKey || e.ctrlKey || e.altKey) return;
 
             switch (e.code) {
-                case "KeyK":
+                case "KeyJ":
                     stopEvent(e);
                     if (!window.location.href.includes("/reels")) return;
                     this.#rotate(-1);
                     break;
-                case "KeyJ":
+                case "KeyK":
                     stopEvent(e);
                     if (!window.location.href.includes("/reels")) return;
                     this.#rotate(1);
