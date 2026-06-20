@@ -104,8 +104,8 @@ class VideoControl {
    */
   static #attachKeybinds() {
     document.body.addEventListener("keydown", (e) => {
-      if (isInput()) return;;
-
+      if (isInput()) return;
+      if(e.metaKey || e.ctrlKey || e.altKey) return;
       switch (e.code) {
         case "ArrowRight":
           //forward 5 seconds

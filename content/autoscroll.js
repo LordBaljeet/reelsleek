@@ -81,6 +81,7 @@ class AutoScroll {
   static #attachKeybinds() {
     document.body.addEventListener("keydown", (e) => {
       if (isInput()) return;
+      if(e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.code === "KeyA") {
         if (!window.location.href.includes("/reels")) return;
         stopEvent(e);

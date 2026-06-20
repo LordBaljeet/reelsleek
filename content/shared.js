@@ -19,9 +19,9 @@ class EventSubscriber {
    * Updates the subscriber by executing the action for the given event.
    * @param {string} event - The event type to handle
    */
-  update(event) {
+  update(event, ...args) {
     if (!this.#element.deref) return;
-    this.#actions.get(event)?.();
+    this.#actions.get(event)?.(...args);
   }
 
   /**
@@ -70,8 +70,8 @@ class EventPublisher {
    * Publishes an event to all subscribers.
    * @param {string} event - The event type to publish
    */
-  publish(event) {
-    this.#subscribers.forEach(sub => sub.update(event));
+  publish(event, ...args) {
+    this.#subscribers.forEach(sub => sub.update(event, ...args));
   }
 }
 
