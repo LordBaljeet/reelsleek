@@ -184,3 +184,59 @@ function attachToolbar(video) {
 
   video.parentElement.prepend(container);
 }
+
+function addKeybind(key, action) {
+  document.body.addEventListener("keydown", async (e) => {
+    if (isInput()) return;
+    if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+    if (e.code === key) {
+      action?.(e);
+    }
+  });
+}
+
+class PageHandler {
+    
+    static #videoType = {
+        STORIE: 'storie',
+        REEL: 'reel',
+        POST: 'post',
+        FEED: 'feed',
+        MESSAGE: 'message',
+    }
+
+    static getVideoType() {
+        const pathname = window.location.pathname;
+        if (pathname.includes('/stories/')) {
+            return this.#videoType.STORIE;
+        } else if (pathname.includes('/reels/')) {
+            return this.#videoType.REEL;
+        } else if (pathname.includes('/p/')) {
+            return this.#videoType.POST;
+        } else if (pathname.includes('/direct/')) {
+            return this.#videoType.MESSAGE;
+        }
+        return this.#videoType.FEED;
+    }
+
+    static isStorie() {
+        return this.getVideoType() == this.#videoType.STORIE;
+    }
+
+    static isReel() {
+        return this.getVideoType() == this.#videoType.REEL;
+    }
+
+    static isPost() {
+        return this.getVideoType() == this.#videoType.POST;
+    }
+
+    static isFeed() {
+        return this.getVideoType() == this.#videoType.FEED;
+    }
+
+    static isMessage() {
+        return this.getVideoType() == this.#videoType.MESSAGE;
+    }
+
+}

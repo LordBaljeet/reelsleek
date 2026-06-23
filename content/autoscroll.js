@@ -79,14 +79,9 @@ class AutoScroll {
   }
 
   static #attachKeybinds() {
-    document.body.addEventListener("keydown", (e) => {
-      if (isInput()) return;
-      if(e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.code === "KeyA") {
-        if (!window.location.href.includes("/reels")) return;
-        stopEvent(e);
-        this.#toggleAutoscroll();
-      }
+    addKeybind("KeyA", () => {
+      if(!PageHandler.isReel()) return;
+      this.#toggleAutoscroll();
     });
   }
 
@@ -103,11 +98,11 @@ class AutoScroll {
     if (document.querySelector('[role="dialog"]')) return;
 
     try {
-      console.debug('[Autoscroll] trying to click on the next reel button')
       const nextButton = document.querySelectorAll('div[role="toolbar"] div[role="button"]')[1];
       nextButton?.click();
-      console.debug('[Autoscroll] button', nextButton, 'clicked');
-    } catch { /* no-op */ }
+    } catch { 
+      console.debug('[Autoscroll] failed to autoscroll')
+     }
   }
 
   /**
@@ -116,8 +111,8 @@ class AutoScroll {
    * @param {HTMLVideoElement} video - The video element to attach autoscroll to
    */
   static attach(video) {
+    if (!PageHandler.isReel()) return;
     if (video.dataset.reelsleekAutoscrollAttached) return;
-    if (!window.location.href.includes('/reels/')) return;
 
     const button = document.createElement("button");
     button.className = "reelsleek-autoscroll";

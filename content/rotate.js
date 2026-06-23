@@ -47,7 +47,7 @@ class Rotate {
         parent.style.display = 'flex';
         parent.style.justifyContent = 'center';
         parent.style.alignItems = 'center';
-        
+
         if (orientChanged) {
             const parentDimensions = containerParent.getBoundingClientRect();
             containerParent.style.height = `${parentDimensions.width}px`;
@@ -56,7 +56,7 @@ class Rotate {
         }
 
         const originalOrientChanged = newRotation % 2 != 0;
-        if(originalOrientChanged) {
+        if (originalOrientChanged) {
             video.style.width = containerParent.style.height;
             video.style.height = containerParent.style.width;
         } else {
@@ -64,14 +64,12 @@ class Rotate {
             video.style.width = "100%";
             video.style.height = "100%";
         }
-        
+
         video.style.transformOrigin = 'center center';
         video.style.transform = `rotate(${newRotation * 90}deg)`;
         video.style.transform = `rotate(${newRotation * 90}deg)`;
 
         video.dataset.reelsleekRotation = newRotation;
-        console.debug('[Rotate] Video rotated to', newRotation * 90, 'degrees', video);
-        
         this.#eventsPublisher.publish(this.#Event.ROTATE, { video: video, rotation: newRotation });
     }
 
@@ -81,30 +79,20 @@ class Rotate {
      * @private
      */
     static #attachKeybinds() {
-        document.body.addEventListener("keydown", (e) => {
-            if (isInput()) return;
-            if(e.metaKey || e.ctrlKey || e.altKey) return;
-
-            switch (e.code) {
-                case "KeyJ":
-                    stopEvent(e);
-                    if (!window.location.href.includes("/reels")) return;
-                    this.#rotate(-1);
-                    break;
-                case "KeyK":
-                    stopEvent(e);
-                    if (!window.location.href.includes("/reels")) return;
-                    this.#rotate(1);
-                    break;
-                case "KeyH":
-                    stopEvent(e);
-                    if (!window.location.href.includes("/reels")) return;
-                    const video = VideoControl.currentlyPlayingVideo;
-                    if (!video) return;
-                    const currentRotation = parseInt(video.dataset.reelsleekRotation || "0", 10);
-                    this.#rotate(-currentRotation);
-                    break;
-            }
+        addKeybind("KeyJ", () => {
+            if (!PageHandler.isReel()) return;
+            this.#rotate(-1);
+        });
+        addKeybind("KeyK", () => {
+            if (!PageHandler.isReel()) return;
+            this.#rotate(1);
+        });
+        addKeybind("KeyH", () => {
+            if (!PageHandler.isReel()) return;
+            const video = VideoControl.currentlyPlayingVideo;
+            if (!video) return;
+            const currentRotation = parseInt(video.dataset.reelsleekRotation || "0", 10);
+            this.#rotate(-currentRotation);
         });
     }
 
@@ -128,14 +116,14 @@ class Rotate {
 
         const container = document.createElement('div');
         container.className = 'reelsleek-rotate-container';
-        
+
         const toolbarButton = document.createElement("button");
         toolbarButton.className = "reelsleek-rotate";
         toolbarButton.setAttribute("aria-pressed", String(this.enabled));
         toolbarButton.setAttribute("aria-label", "Reset Rotation");
         toolbarButton.title = "Reset Rotation (H)";
         appendParsedHTML(toolbarButton, this.#ToolbarIcon);
-        
+
         const flyoutContainer = document.createElement('div');
         flyoutContainer.className = 'reelsleek-rotate-flyout';
 
@@ -144,19 +132,19 @@ class Rotate {
         rotateLeftButton.setAttribute("aria-label", "Rotate left");
         rotateLeftButton.title = "Rotate left (J)";
         appendParsedHTML(rotateLeftButton, this.#RotateLeftIcon);
-        
+
         const rotateRightButton = document.createElement("button");
         rotateRightButton.className = "reelsleek-rotate reelsleek-rotate-right";
         rotateRightButton.setAttribute("aria-label", "Rotate right");
         rotateRightButton.title = "Rotate right (K)";
         appendParsedHTML(rotateRightButton, this.#RotateRightIcon);
-        
+
         // Assemble structural items into nested tree hierarchy
         flyoutContainer.appendChild(rotateLeftButton);
         flyoutContainer.appendChild(rotateRightButton);
         container.appendChild(toolbarButton);
         container.appendChild(flyoutContainer);
-        
+
         rotateLeftButton.addEventListener("click", (e) => {
             e.stopPropagation();
             this.#rotate(-1);
@@ -170,7 +158,6 @@ class Rotate {
         toolbarButton.addEventListener("click", (e) => {
             e.stopPropagation();
             const rotation = parseInt(video.dataset.reelsleekRotation || "0", 10);
-            console.debug('[Rotate] Resetting rotation from', rotation * 90, 'degrees to 0 degrees', -rotation);
             this.#rotate(-rotation);
         });
 
@@ -178,9 +165,7 @@ class Rotate {
         rotateSub.subscribe(this.#Event.ROTATE, (args) => {
             const isConcernedVideo = args.video.src === video.src;
             if (!isConcernedVideo) return;
-            console.debug('[Rotate] Rotate event is for the concerned video, updating toolbar button state');
             toolbarButton.setAttribute("aria-pressed", args.rotation !== 0);
-            console.debug('[Rotate] Updated toolbar button state to', args.rotation !== 0 ? 'pressed' : 'not pressed', 'for rotation', args.rotation * 90, 'degrees', toolbarButton);
         });
         this.#eventsPublisher.addSubscriber(rotateSub);
 

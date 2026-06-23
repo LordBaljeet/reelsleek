@@ -25,8 +25,10 @@ class VideoControl {
    */
   static setCurrentlyPlayingVideo(video, firstLoad = false) {
     if (firstLoad && this.currentlyPlayingVideo) return;
+    if(this.currentlyPlayingVideo != video) {
+      this.currentlyPlayingVideo?.pause();
+    }
     this.currentlyPlayingVideo = video;
-    video.focus();
   }
 
   static #SEEKBAR_HTML = `
@@ -67,11 +69,18 @@ class VideoControl {
     this.setFullscreen(!this.fullscreenOn);
     if (this.fullscreenOn) {
       const fullscreenTarget = video.parentElement.parentElement;
-      // const fullscreenTarger = document.querySelector('main');
       fullscreenTarget.requestFullscreen().catch((err) => {
         console.error(`Fullscreen error: ${err.message}`);
       });
+      if(video != this.currentlyPlayingVideo) {
+        video.play()
+      }
+      this.setCurrentlyPlayingVideo(video);
     }
+  }
+
+  static #togglePlay(video) {
+    video.paused ? video.play() : video.pause();
   }
 
   /**
@@ -103,38 +112,25 @@ class VideoControl {
    * @private
    */
   static #attachKeybinds() {
-    document.body.addEventListener("keydown", (e) => {
-      if (isInput()) return;
-      if(e.metaKey || e.ctrlKey || e.altKey) return;
-      switch (e.code) {
-        case "ArrowRight":
-          //forward 5 seconds
-          this.currentlyPlayingVideo.currentTime += 5;
-          stopEvent(e);
-          break;
-
-        case "ArrowLeft":
-          //rewind 5 seconds
-          this.currentlyPlayingVideo.currentTime -= 5;
-          stopEvent(e);
-          break;
-
-        case "Space":
-        case "KeyP":
-          this.currentlyPlayingVideo.paused ? this.currentlyPlayingVideo.play() : this.currentlyPlayingVideo.pause();
-          try {
-            this.currentlyPlayingVideo.parentElement
-              ?.querySelector('[role="button"][aria-disabled="false"]')
-              ?.click();
-          } catch { }
-          stopEvent(e);
-          break;
-
-        case "KeyF":
-          this.#toggleFullscreen(this.currentlyPlayingVideo);
-          break;
-      }
+    addKeybind("ArrowRight", () => {
+      if (PageHandler.isStorie()) return;
+      this.currentlyPlayingVideo.currentTime += 5;
     });
+    addKeybind("ArrowLeft", () => {
+      if (PageHandler.isStorie()) return;
+      this.currentlyPlayingVideo.currentTime -= 5;
+    });
+    addKeybind("KeyP", () => {
+      this.#togglePlay(this.currentlyPlayingVideo);
+    });
+    addKeybind("Space", (e) => {
+      this.#togglePlay(this.currentlyPlayingVideo);
+      stopEvent(e)
+    });
+    addKeybind("KeyF", () => {
+      this.#toggleFullscreen(this.currentlyPlayingVideo);
+    });
+    
   }
 
   /**
@@ -164,6 +160,7 @@ class VideoControl {
    * @param {HTMLVideoElement} video - The video element to attach controls to
    */
   static attach(video) {
+    if(PageHandler.isStorie()) return;
     if (video.dataset.reelsleekVideoControlAttached) return;
     video.dataset.reelsleekVideoControlAttached = "true";
 
@@ -219,7 +216,7 @@ class VideoControl {
     const playContainer = document.createElement("div");
     playContainer.className = 'reelsleek-play-container';
     appendParsedHTML(playContainer, this.#PLAY_HTML);
-    
+
     playContainer.addEventListener("dblclick", (e) => {
       e.stopPropagation();
       this.#toggleFullscreen(video);
@@ -228,13 +225,18 @@ class VideoControl {
       e.stopPropagation();
       video.paused ? video.play() : video.pause();
     })
-    
+
     video.parentElement.prepend(playContainer);
 
     const playListener = () => {
       seekbarContainer.dataset.showPaused = "false";
       playContainer.dataset.showPaused = "false";
-      this.setCurrentlyPlayingVideo(video);
+      let targetVideo = video;
+      if(this.fullscreenOn && video != this.currentlyPlayingVideo) {
+        video.pause();
+        targetVideo = this.currentlyPlayingVideo;
+      }
+      this.setCurrentlyPlayingVideo(targetVideo);
     };
 
     const pauseListener = () => {
@@ -278,7 +280,7 @@ class VideoControl {
 
     // Remove seekbar container
     video.parentElement.querySelector('.reelsleek-video-control')?.remove();
-    
+
     // Remove play container
     video.parentElement.querySelector('.reelsleek-play-container')?.remove();
 

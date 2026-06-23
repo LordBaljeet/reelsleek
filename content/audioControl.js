@@ -112,7 +112,6 @@ class AudioControl {
     const svg = targetDiv.querySelector(
       'div[role="group"] div > div[role="button"] > svg, div[role="group"] div.html-div > button > div > svg',
     );
-    console.debug('[AudioControl] found this svg for native mute button', svg);
     if (!svg) return;
     return svg.closest('button, [role="button"]');
   }
@@ -125,7 +124,6 @@ class AudioControl {
     const button = this.#findNativeMuteButton();
     if (!button) return;
     button.click();
-    console.debug('[AudioControl] clicking native mute button ', button);
   }
 
   /**
@@ -165,10 +163,10 @@ class AudioControl {
    * Toggles the mute state. If unmuting with zero volume, sets volume to 10%.
    * @private
    */
-  static async #toggleMute() {
+  static #toggleMute() {
     this.#setMuted(!this.muted);
     if (!this.muted && this.volume == 0) {
-      await this.#setVolume(0.1);
+      this.#setVolume(0.1);
     }
   }
 
@@ -177,7 +175,7 @@ class AudioControl {
    * @param {number} volume - Volume level (0.0 to 1.0)
    * @private
    */
-  static async #setVolume(volume) {
+  static #setVolume(volume) {
     this.volume = volume;
     if (this.volume > 0 && this.muted) {
       this.#toggleMute();
@@ -250,25 +248,9 @@ class AudioControl {
    * @private
    */
   static #attachKeybinds() {
-    document.body.addEventListener("keydown", (e) => {
-      if (isInput()) return;
-      if(e.metaKey || e.ctrlKey || e.altKey) return;
-      switch (e.code) {
-        case "KeyM":
-          this.#toggleMute();
-          break;
-
-        case "Minus":
-          //reduce volume by 10%
-          this.#setVolume(Math.max(this.volume - 0.1, 0));
-          break;
-
-        case "Equal":
-          //increase volume by 10%
-          this.#setVolume(Math.min(this.volume + 0.1, 1));
-          break;
-      }
-    });
+    addKeybind("KeyM", () => this.#toggleMute());
+    addKeybind("Minus", () => this.#setVolume(Math.max(this.volume - 0.1, 0)));
+    addKeybind("Equal", () => this.#setVolume(Math.min(this.volume + 0.1, 1)));
   }
 
   /**
@@ -298,7 +280,10 @@ class AudioControl {
     container.className = "reelsleek-audio-control";
     container.dataset.orientation = this.orientation;
     appendParsedHTML(container, this.#HTML);
-    video.parentElement.prepend(container);
+
+    if(!PageHandler.isStorie()) {
+      video.parentElement.prepend(container);
+    }
 
     {
       const containerSubscriber = new EventSubscriber(container);
@@ -368,11 +353,9 @@ class AudioControl {
     // Sync video volume changes back to AudioControl state
     const volumeChangeListener = () => {
       if (video.volume !== this.volume) {
-        console.debug('[AudioControl] video volume changed externally, syncing back from', video.volume, 'to', this.volume);
         video.volume = this.volume;
       }
       if (video.muted !== this.muted) {
-        console.debug('[AudioControl] video muted state changed externally, syncing back from', video.muted, 'to', this.muted);
         video.muted = this.muted;
       }
     };

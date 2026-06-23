@@ -32,14 +32,14 @@ class TheaterMode {
      * @private
      */
     static toggleTheaterMode() {
-        if(!VideoControl.fullscreenOn)this.setTheaterModeEnabled(!this.enabled);
+        if (!VideoControl.fullscreenOn) this.setTheaterModeEnabled(!this.enabled);
         VideoControl.setFullscreen(false);
         if (this.enabled) {
             const fullscreenTarget = document.body;
             fullscreenTarget.requestFullscreen().catch((err) => {
                 console.error(`Fullscreen error: ${err.message}`);
             });
-        } else if(document.fullscreenElement) {
+        } else if (document.fullscreenElement) {
             document.exitFullscreen();
         }
     }
@@ -50,16 +50,9 @@ class TheaterMode {
      * @private
      */
     static #attachKeybinds() {
-        document.body.addEventListener("keydown", (e) => {
-            if(isInput()) return;
-            if(e.metaKey || e.ctrlKey || e.altKey) return;
-            switch (e.code) {
-                case "KeyT":
-                    stopEvent(e);
-                    if(!window.location.href.includes("/reels")) return;
-                    this.toggleTheaterMode();
-                    break;
-            }
+        addKeybind("KeyT", () => {
+            if (!PageHandler.isReel()) return;
+            this.toggleTheaterMode();
         });
     }
 
@@ -107,14 +100,14 @@ class TheaterMode {
         if (ToolbarMode.isCustom()) {
             const toolbarContainer = video.parentElement.querySelector('.reelsleek-toolbar-container');
             if (!toolbarContainer) return;
-            if(toolbarContainer.querySelector('.reelsleek-theater-mode')) return;
+            if (toolbarContainer.querySelector('.reelsleek-theater-mode')) return;
             toolbarContainer.appendChild(button);
         } else {
             const parent = getNthParent(video, this.#ToolbarDepth);
             if (!parent) return;
             const toolbar = parent.nextElementSibling;
             if (!toolbar) return;
-            if(toolbar.querySelector('.reelsleek-theater-mode')) return;
+            if (toolbar.querySelector('.reelsleek-theater-mode')) return;
             const children = [...toolbar.children];
             toolbar.insertBefore(button, children[children.length - 2]);
         }
