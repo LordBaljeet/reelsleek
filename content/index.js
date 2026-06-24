@@ -48,9 +48,9 @@ const handleHomePageVideo = (video) => {
   function handleVideo(video) {
     if (video.src && (!video.src.startsWith("blob") || video.src.includes("giphy.com"))) return;
     if (video.closest('[role="none')) return; // Skip gifs in embedded chats
+    if(!PageHandler.isStorie()) attachToolbar(video);
     VideoControl.setCurrentlyPlayingVideo(video, true);
     AudioControl.attach(video);
-    attachToolbar(video);
     VideoControl.attach(video);
     AutoScroll.attach(video);
     TheaterMode.attach(video);

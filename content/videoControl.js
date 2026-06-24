@@ -160,7 +160,6 @@ class VideoControl {
    * @param {HTMLVideoElement} video - The video element to attach controls to
    */
   static attach(video) {
-    if(PageHandler.isStorie()) return;
     if (video.dataset.reelsleekVideoControlAttached) return;
     video.dataset.reelsleekVideoControlAttached = "true";
 
@@ -182,6 +181,7 @@ class VideoControl {
       if (!isFinite(video.duration)) return;
       video.currentTime = video.duration * (seekbar.value / 100);
       seekbar.style.setProperty('--seek-fill', seekbar.value + '%');
+      seekbar.blur();
     });
 
     seekbar.addEventListener("click", (e) => e.stopPropagation());
@@ -210,7 +210,9 @@ class VideoControl {
         e.stopPropagation();
         this.#toggleFullscreen(video);
       });
-      video.parentElement.prepend(fullscreenContainer);
+      if(!PageHandler.isStorie()) {
+        video.parentElement.prepend(fullscreenContainer);
+      }
     }
 
     const playContainer = document.createElement("div");
@@ -254,6 +256,15 @@ class VideoControl {
       play: playListener,
       pause: pauseListener,
     });
+
+    // Storie extra styling for better visibility
+    if(!PageHandler.isStorie()) return;
+    const storieParent = getNthParent(video, 14);
+    const replyContainer = storieParent?.nextSibling?.firstChild;
+    if(!replyContainer) return;
+    replyContainer.style.background = "none";
+    replyContainer.style.paddingBottom = "25px";
+    console.debug('[VideoControl] found parent container', replyContainer, 'for video', video)
   }
 
   /**

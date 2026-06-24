@@ -270,6 +270,7 @@ class AudioControl {
    * @param {HTMLVideoElement} video - The video element to attach controls to
    */
   static attach(video) {
+    if(PageHandler.isStorie()) return;
     this.#syncNativeMuteOnFirstLoad();
 
     if (video.dataset.reelsleekAudioControlAttached) return;
@@ -280,10 +281,7 @@ class AudioControl {
     container.className = "reelsleek-audio-control";
     container.dataset.orientation = this.orientation;
     appendParsedHTML(container, this.#HTML);
-
-    if(!PageHandler.isStorie()) {
-      video.parentElement.prepend(container);
-    }
+    video.parentElement.prepend(container);
 
     {
       const containerSubscriber = new EventSubscriber(container);
