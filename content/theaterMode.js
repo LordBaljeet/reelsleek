@@ -103,7 +103,7 @@ class TheaterMode {
             if (toolbarContainer.querySelector('.reelsleek-theater-mode')) return;
             toolbarContainer.appendChild(button);
         } else {
-            const parent = getNthParent(video, this.#ToolbarDepth);
+            const parent = video.closest('[style*="--x-width"]');
             if (!parent) return;
             const toolbar = parent.nextElementSibling;
             if (!toolbar) return;
@@ -121,13 +121,14 @@ class TheaterMode {
      */
     static detach(video) {
         if (!video.dataset.reelsleekTheaterModeAttached) return;
+        delete video.dataset.reelsleekTheaterModeAttached;
 
         // Find button in custom toolbar or native Instagram toolbar
-        const button = video.parentElement.querySelector('.reelsleek-theater-mode')
-            ?? getNthParent(video, this.#ToolbarDepth)?.nextElementSibling?.querySelector('.reelsleek-theater-mode');
+        const parent = video.closest('[style*="--x-width"]');
+        const toolbar = parent?.nextElementSibling;
+        const button = toolbar?.querySelector('.reelsleek-theater-mode');
         button?.remove();
 
-        delete video.dataset.reelsleekTheaterModeAttached;
     }
 
     /**

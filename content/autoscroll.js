@@ -138,7 +138,7 @@ class AutoScroll {
       if(toolbarContainer.querySelector('.reelsleek-autoscroll')) return;
       toolbarContainer.appendChild(button);
     } else {
-      const parent = getNthParent(video, this.#ToolbarDepth);
+      const parent = video.closest('[style*="--x-width"]');
       if (!parent) return;
       const toolbar = parent.nextElementSibling;
       if (!toolbar) return;
@@ -161,6 +161,7 @@ class AutoScroll {
    */
   static detach(video) {
     if (!video.dataset.reelsleekAutoscrollAttached) return;
+    delete video.dataset.reelsleekAutoscrollAttached;
 
     // Remove the event listener from the video
     const endListener = this.#videoEndListeners.get(video);
@@ -170,11 +171,11 @@ class AutoScroll {
     }
 
     // Find button in custom toolbar or native Instagram toolbar
-    const button = video.parentElement.querySelector('.reelsleek-autoscroll')
-      ?? getNthParent(video, this.#ToolbarDepth)?.nextElementSibling?.querySelector('.reelsleek-autoscroll');
+    const parent = video.closest('[style*="--x-width"]');
+    const toolbar = parent?.nextElementSibling;
+    const button = toolbar?.querySelector('.reelsleek-autoscroll');
     button?.remove();
 
-    delete video.dataset.reelsleekAutoscrollAttached;
   }
 
   /**

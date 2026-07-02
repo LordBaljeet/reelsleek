@@ -175,7 +175,7 @@ class Rotate {
             if (toolbarContainer.querySelector('.reelsleek-rotate')) return;
             toolbarContainer.appendChild(container);
         } else {
-            const parent = getNthParent(video, this.#ToolbarDepth);
+            const parent = video.closest('[style*="--x-width"]');
             if (!parent) return;
             const toolbar = parent.nextElementSibling;
             if (!toolbar) return;
@@ -193,13 +193,14 @@ class Rotate {
      */
     static detach(video) {
         if (!video.dataset.reelsleekRotateAttached) return;
+        delete video.dataset.reelsleekRotateAttached;
 
         // Find button in custom toolbar or native Instagram toolbar
-        const button = video.parentElement.querySelector('.reelsleek-rotate-container')
-            ?? getNthParent(video, this.#ToolbarDepth)?.nextElementSibling?.querySelector('.reelsleek-rotate-container');
+        const parent = video.closest('[style*="--x-width"]');
+        const toolbar = parent?.nextElementSibling;
+        const button = toolbar?.querySelector('.reelsleek-rotate-container');
         button?.remove();
 
-        delete video.dataset.reelsleekRotateAttached;
     }
 
     /**
@@ -221,3 +222,5 @@ class Rotate {
         });
     }
 }
+
+//html-div xdj266r x14z9mp xexx8yu xyri2b x18d9i69 x1c1uobl x9f619 xjbqb8w x78zum5 x15mokao x1ga7v0g x16uus16 xbiv7yw x12nagc x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x6s0dn4 x1oa3qoh x13a6bvl x1diwwjn x1247r65

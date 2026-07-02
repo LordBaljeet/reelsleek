@@ -122,3 +122,12 @@ div:has(> .reelsleek-toolbar):hover > .reelsleek-toolbar {
   opacity: 1;
   pointer-events: auto;
 }
+
+.reelsleek-homepage-author-container {
+  position: initial !important;
+  background: none !important;
+  * {
+    color: rgb(var(--ig-primary-text)) !important;
+  }
+}
+

@@ -13,8 +13,7 @@ const handleHomePageVideo = (video) => {
   //fix move author name and profile picture to the top of the video on home page.
   const authorContainer = closestLink.previousElementSibling;
   if (!authorContainer) return;
-  authorContainer.style.position = 'initial';
-  authorContainer.style.background = 'none';
+  authorContainer.classList.add('reelsleek-homepage-author-container');
   authorContainer.parentElement.style.background = 'none';
   
 }
