@@ -1,6 +1,70 @@
 /**
- * Manages automatic scrolling to the next reel when the current video ends.
- * Provides a toggle button on the Instagram UI to enable/disable autoscroll.
+ * UI & LIFECYCLE MODULE: AutoScrollModule
+ * Manages localized DOM placement and contextual media events.
+ */
+class AutoScrollModule {
+  constructor(video, templateElement, isEnabled, toggleCallback, eventsPublisher, toggleEvent, onVideoEndedCallback) {
+    this.video = video;
+    this.button = null;
+    this.onVideoEnded = onVideoEndedCallback;
+
+    if (!templateElement) return;
+
+    // 1. Extract structural fragments from the external asset
+    const clone = document.importNode(templateElement.content, true);
+    this.button = clone.querySelector(".reelsleek-autoscroll");
+    if (!this.button) return;
+
+    // 2. Setup interactivity configurations
+    this.button.setAttribute("aria-pressed", String(isEnabled));
+    this.button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleCallback();
+    });
+
+    // 3. Register state sync bindings
+    this.buttonSubscriber = new EventSubscriber(this.button);
+    this.buttonSubscriber.subscribe(toggleEvent, () => {
+      this.button.setAttribute("aria-pressed", String(AutoScroll.autoscrollEnabled));
+    });
+    eventsPublisher.addSubscriber(this.buttonSubscriber);
+
+    // 4. Inject into layout nodes
+    this.#injectUI(clone);
+
+    // 5. Connect media pipeline loops directly to this component instance
+    this.mediaListener = () => this.onVideoEnded();
+    this.video.addEventListener("ended", this.mediaListener);
+  }
+
+  #injectUI(fragment) {
+    if (ToolbarMode.isCustom()) {
+      const toolbarContainer = this.video.parentElement.querySelector('.reelsleek-toolbar-container');
+      if (!toolbarContainer || toolbarContainer.querySelector('.reelsleek-autoscroll')) return;
+      toolbarContainer.appendChild(fragment);
+    } else {
+      const parent = this.video.closest('[style*="--x-width"]');
+      if (!parent) return;
+      const toolbar = parent.nextElementSibling;
+      if (!toolbar || toolbar.querySelector('.reelsleek-autoscroll')) return;
+      const children = [...toolbar.children];
+      toolbar.insertBefore(fragment, children[children.length - 2]);
+    }
+  }
+
+  destroy() {
+    // Drop media pipeline triggers cleanly
+    if (this.mediaListener) {
+      this.video.removeEventListener("ended", this.mediaListener);
+    }
+    // Remove the tracking layout node from the view layer
+    this.button?.remove();
+  }
+}
+
+/**
+ * MAIN CONTROLLER / ORCHESTRATOR
+ * Manages extension preferences, physical state modifications, and application keybind loops.
  */
 class AutoScroll {
   /** @type {boolean} Whether autoscroll is enabled */
@@ -8,91 +72,77 @@ class AutoScroll {
 
   static #eventsPublisher = new EventPublisher();
 
-  /** @type {WeakMap<HTMLVideoElement, Function>} Stores event listeners for cleanup */
-  static #videoEndListeners = new WeakMap();
+  static #template = null;
 
-  static #HTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-      <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6.416 14.5V11m0 0V4.75a1.75 1.75 0 1 1 3.5 0V10l3.077.478c1.929.289 2.893.434 3.572.84c1.122.673 1.935 1.682 1.935 3.156c0 1.026-.254 1.715-.87 3.565c-.392 1.174-.587 1.76-.906 2.225a4 4 0 0 1-2.193 1.58c-.541.156-1.16.156-2.397.156h-1.405c-1.785 0-2.677 0-3.443-.335a4 4 0 0 1-.96-.593c-.642-.535-1.04-1.333-1.839-2.93c-.647-1.294-.97-1.94-.986-2.612a3 3 0 0 1 .115-.895c.184-.646.66-1.19 1.614-2.28zM18 2v6m0-6c-.7 0-2.008 1.994-2.5 2.5M18 2c.7 0 2.009 1.994 2.5 2.5" />
-    </svg>
-  `
+  /** @type {WeakMap<HTMLVideoElement, AutoScrollModule>} Holds active architectural wrappers */
+  static #videoInstances = new WeakMap();
 
   static #Event = {
     "AUTOSCROLL_TOGGLE": "autoscroll-toggle",
-  }
+  };
 
   static #StorageKeys = {
     "autoscrollKey": "reelsleek-autoscroll-enabled",
-  }
-
-  static #ToolbarDepth = 12;
+  };
 
   /**
    * Sets the autoscroll state and persists the preference.
    * @param {boolean} enabled - Whether autoscroll should be enabled
    */
   static setAutoscrollEnabled(enabled) {
-    this.autoscrollEnabled = enabled;
-    this.#eventsPublisher.publish(this.#Event.AUTOSCROLL_TOGGLE);
-    this.#saveStates();
+    AutoScroll.autoscrollEnabled = enabled;
+    AutoScroll.#eventsPublisher.publish(AutoScroll.#Event.AUTOSCROLL_TOGGLE);
+    AutoScroll.#saveStates();
   }
 
   /**
    * Toggles the autoscroll state.
-   * @private
    */
-  static #toggleAutoscroll() {
-    this.setAutoscrollEnabled(!this.autoscrollEnabled);
+  static toggleAutoscroll() {
+    AutoScroll.setAutoscrollEnabled(!AutoScroll.autoscrollEnabled);
   }
 
   /**
    * Saves the autoscroll state to browser storage.
-   * @private
    */
   static #saveStates() {
     browser.storage.local.set({
-      [this.#StorageKeys.autoscrollKey]: this.autoscrollEnabled
+      [AutoScroll.#StorageKeys.autoscrollKey]: AutoScroll.autoscrollEnabled
     });
   }
 
   /**
    * Loads saved autoscroll state from browser storage.
-   * @private
-   * @returns {Promise<void>}
    */
   static async #loadStates() {
     const result = await browser.storage.local.get([
-      this.#StorageKeys.autoscrollKey,
+      AutoScroll.#StorageKeys.autoscrollKey,
     ]);
-
-    this.autoscrollEnabled = result[this.#StorageKeys.autoscrollKey] ?? this.autoscrollEnabled
+    AutoScroll.autoscrollEnabled = result[AutoScroll.#StorageKeys.autoscrollKey] ?? AutoScroll.autoscrollEnabled;
   }
 
   /**
    * Initializes the AutoScroll class by loading saved state.
-   * Should be called once on page load.
    * @returns {Promise<void>}
    */
   static async setup() {
-    await this.#loadStates();
-    this.#attachKeybinds();
+    await AutoScroll.#loadStates();
+    AutoScroll.#attachKeybinds();
   }
 
   static #attachKeybinds() {
     addKeybind("KeyA", () => {
-      if(!PageHandler.isReel()) return;
-      this.#toggleAutoscroll();
+      if (!PageHandler.isReel()) return;
+      AutoScroll.toggleAutoscroll();
     });
   }
 
   /**
    * Handles video end event and scrolls to next reel if autoscroll is enabled.
-   * Skips if in fullscreen, not on reels page, or a dialog is open.
-   * @private
    */
-  static #onVideoEnded() {
-    console.debug('[Autoscroll] video ended, scrolling ? ', this.autoscrollEnabled);
-    if (!this.autoscrollEnabled) return;
+  static handleVideoEnded() {
+    console.debug('[Autoscroll] video ended, scrolling ? ', AutoScroll.autoscrollEnabled);
+    if (!AutoScroll.autoscrollEnabled) return;
     if (VideoControl.fullscreenOn) return;
     if (!window.location.href.includes("reels")) return;
     if (document.querySelector('[role="dialog"]')) return;
@@ -101,57 +151,39 @@ class AutoScroll {
       const nextButton = document.querySelectorAll('div[role="toolbar"] div[role="button"]')[1];
       nextButton?.click();
     } catch { 
-      console.debug('[Autoscroll] failed to autoscroll')
-     }
+      console.debug('[Autoscroll] failed to autoscroll');
+    }
   }
 
   /**
-   * Attaches autoscroll toggle button to the Instagram toolbar and listens for video end events.
-   * Skips if already attached or if the toolbar cannot be found.
+   * Attaches autoscroll toggle button to the Instagram toolbar.
    * @param {HTMLVideoElement} video - The video element to attach autoscroll to
    */
   static attach(video) {
     if (!PageHandler.isReel()) return;
     if (video.dataset.reelsleekAutoscrollAttached) return;
 
-    const button = document.createElement("button");
-    button.className = "reelsleek-autoscroll";
-    button.setAttribute("aria-pressed", String(this.autoscrollEnabled));
-    button.setAttribute("aria-label", "Toggle autoscroll");
-    button.title = "Toggle autoscroll (A)";
-    appendParsedHTML(button, this.#HTML);
-
-    button.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.#toggleAutoscroll();
-    });
-
-    const buttonSubscriber = new EventSubscriber(button);
-    buttonSubscriber.subscribe(this.#Event.AUTOSCROLL_TOGGLE, () => {
-      button.setAttribute("aria-pressed", String(this.autoscrollEnabled));
-    });
-    this.#eventsPublisher.addSubscriber(buttonSubscriber);
-
-    if (ToolbarMode.isCustom()) {
-      const toolbarContainer = video.parentElement.querySelector('.reelsleek-toolbar-container');
-      if (!toolbarContainer) return;
-      if(toolbarContainer.querySelector('.reelsleek-autoscroll')) return;
-      toolbarContainer.appendChild(button);
-    } else {
-      const parent = video.closest('[style*="--x-width"]');
-      if (!parent) return;
-      const toolbar = parent.nextElementSibling;
-      if (!toolbar) return;
-      if(toolbar.querySelector('.reelsleek-autoscroll')) return;
-      const children = [...toolbar.children];
-      toolbar.insertBefore(button, children[children.length - 2]);
+    // Async fallback optimization checks
+    if (!AutoScroll.#template) {
+      AutoScroll.#loadExternalTemplates().then(() => {
+        if (AutoScroll.#template && !video.dataset.reelsleekAutoscrollAttached) {
+          AutoScroll.attach(video);
+        }
+      });
+      return;
     }
 
-    // Store the listener function so we can remove it later
-    const endListener = () => this.#onVideoEnded();
-    this.#videoEndListeners.set(video, endListener);
-    video.addEventListener('ended', endListener);
+    const moduleInstance = new AutoScrollModule(
+      video,
+      AutoScroll.#template,
+      AutoScroll.autoscrollEnabled,
+      AutoScroll.toggleAutoscroll,
+      AutoScroll.#eventsPublisher,
+      AutoScroll.#Event.AUTOSCROLL_TOGGLE,
+      AutoScroll.handleVideoEnded
+    );
 
+    AutoScroll.#videoInstances.set(video, moduleInstance);
     video.dataset.reelsleekAutoscrollAttached = "true";
   }
 
@@ -161,39 +193,45 @@ class AutoScroll {
    */
   static detach(video) {
     if (!video.dataset.reelsleekAutoscrollAttached) return;
-    delete video.dataset.reelsleekAutoscrollAttached;
 
-    // Remove the event listener from the video
-    const endListener = this.#videoEndListeners.get(video);
-    if (endListener) {
-      video.removeEventListener('ended', endListener);
-      this.#videoEndListeners.delete(video);
+    const instance = AutoScroll.#videoInstances.get(video);
+    if (instance) {
+      instance.destroy();
+      AutoScroll.#videoInstances.delete(video);
     }
 
-    // Find button in custom toolbar or native Instagram toolbar
-    const parent = video.closest('[style*="--x-width"]');
-    const toolbar = parent?.nextElementSibling;
-    const button = toolbar?.querySelector('.reelsleek-autoscroll');
-    button?.remove();
+    delete video.dataset.reelsleekAutoscrollAttached;
+  }
 
+  /**
+   * Asynchronously pulls and parses asset documents out of packaged assets.
+   */
+  static async #loadExternalTemplates() {
+    try {
+      const fileUrl = browser.runtime.getURL("content/controls.html");
+      const response = await fetch(fileUrl);
+      const text = await response.text();
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, "text/html");
+      AutoScroll.#template = doc.getElementById("reelsleek-autoscroll-template");
+    } catch (err) {
+      console.error("[AutoScroll] Error parsing autoscroll template asset file:", err);
+    }
   }
 
   /**
    * Resets autoscroll button for a video by detaching and reattaching.
-   * @param {HTMLVideoElement} video - The video element to reset autoscroll for
    */
   static reset(video) {
-    this.detach(video);
-    this.attach(video);
+    AutoScroll.detach(video);
+    AutoScroll.attach(video);
   }
 
   /**
    * Resets autoscroll buttons for all video elements on the page.
    */
   static resetAll() {
-    const videos = getCleanVideos();
-    videos.forEach(video => {
-      this.reset(video);
-    });
+    getCleanVideos().forEach(video => AutoScroll.reset(video));
   }
 }

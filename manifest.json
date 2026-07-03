@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ReelSleek",
-  "version": "3.6.10",
+  "version": "3.6.11",
   "description": "Adds persistent volume, precision seeking, and smart mute controls to Instagram Reels.",
   "permissions": [
     "storage",
@@ -30,12 +30,7 @@
         "*://*.instagram.com/*"
       ],
       "css": [
-        "content/base.css",
-        "content/audioControl.css",
-        "content/videoControl.css",
-        "content/autoscroll.css",
-        "content/theaterMode.css",
-        "content/rotate.css"
+        "content/base.css"
       ],
       "js": [
         "content/shared.js",
@@ -62,7 +57,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["icons/logo-no-bg.png"],
+      "resources": ["icons/logo-no-bg.png", "content/controls.html"],
       "matches": ["*://*.instagram.com/*"]
     }
   ],

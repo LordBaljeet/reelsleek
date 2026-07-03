@@ -1,152 +1,200 @@
 /**
- * Manages automatic scrolling to the next reel when the current video ends.
- * Provides a toggle button on the Instagram UI to enable/disable autoscroll.
+ * UI MODULE: TheaterModeModule
+ * Handles local layout injections, DOM positioning lookups, and interface mutations.
+ */
+class TheaterModeModule {
+  constructor(video, templateElement, isEnabled, toggleCallback, eventsPublisher, toggleEvent) {
+    this.video = video;
+    this.button = null;
+
+    if (!templateElement) return;
+
+    // 1. Deep clone structural component elements out of the document template node
+    const clone = document.importNode(templateElement.content, true);
+    this.button = clone.querySelector(".reelsleek-theater-mode");
+    if (!this.button) return;
+
+    // 2. Assign configuration attributes and interactions
+    this.button.setAttribute("aria-pressed", String(isEnabled));
+    this.button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleCallback();
+    });
+
+    // 3. Register state subscriber updates directly to the node instance
+    this.buttonSubscriber = new EventSubscriber(this.button);
+    this.buttonSubscriber.subscribe(toggleEvent, () => {
+      this.button.setAttribute("aria-pressed", String(TheaterMode.enabled));
+    });
+    eventsPublisher.addSubscriber(this.buttonSubscriber);
+
+    // 4. Inject structural components into targeted document nodes
+    this.#injectUI(clone);
+  }
+
+  #injectUI(fragment) {
+    if (ToolbarMode.isCustom()) {
+      const toolbarContainer = this.video.parentElement.querySelector('.reelsleek-toolbar-container');
+      if (!toolbarContainer || toolbarContainer.querySelector('.reelsleek-theater-mode')) return;
+      toolbarContainer.appendChild(fragment);
+    } else {
+      const parent = this.video.closest('[style*="--x-width"]');
+      if (!parent) return;
+      const toolbar = parent.nextElementSibling;
+      if (!toolbar || toolbar.querySelector('.reelsleek-theater-mode')) return;
+      const children = [...toolbar.children];
+      toolbar.insertBefore(fragment, children[children.length - 2]);
+    }
+  }
+
+  destroy() {
+    this.button?.remove();
+  }
+}
+
+/**
+ * MAIN CONTROLLER / ORCHESTRATOR
+ * Manages display cycles, keybind listeners, state changes, and module mapping loops.
  */
 class TheaterMode {
-    /** @type {boolean} Whether theater mode is enabled */
-    static enabled = false;
+  /** @type {boolean} Whether theater mode is enabled */
+  static enabled = false;
 
-    static #eventsPublisher = new EventPublisher();
+  static #eventsPublisher = new EventPublisher();
 
-    static #Event = {
-        "THEATER_TOGGLE": "theater-toggle",
+  static #Event = {
+    "THEATER_TOGGLE": "theater-toggle",
+  };
+
+  /** @type {HTMLTemplateElement|null} Stores the cached template element */
+  static #template = null;
+
+  /** @type {WeakMap<HTMLVideoElement, TheaterModeModule>} Tracks active component instances */
+  static #videoInstances = new WeakMap();
+
+  /**
+   * Sets the theater mode state and persists the preference.
+   * @param {boolean} enabled - Whether theater mode should be enabled
+   */
+  static setTheaterModeEnabled(enabled) {
+    TheaterMode.enabled = enabled;
+    document.body.classList.toggle('theater-mode-active', enabled);
+    TheaterMode.#eventsPublisher.publish(TheaterMode.#Event.THEATER_TOGGLE);
+  }
+
+  /**
+   * Toggles the theater mode viewport state layout bounds.
+   * Safe from context loss!
+   */
+  static toggleTheaterMode() {
+    if (!VideoControl.fullscreenOn) {
+      TheaterMode.setTheaterModeEnabled(!TheaterMode.enabled);
+    }
+    VideoControl.setFullscreen(false);
+    
+    if (TheaterMode.enabled) {
+      const fullscreenTarget = document.body;
+      fullscreenTarget.requestFullscreen().catch((err) => {
+        console.error(`[TheaterMode] Fullscreen error: ${err.message}`);
+      });
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  }
+
+  /**
+   * Attaches keyboard event listeners for video control shortcuts.
+   * @private
+   */
+  static #attachKeybinds() {
+    addKeybind("KeyT", () => {
+      if (!PageHandler.isReel()) return;
+      TheaterMode.toggleTheaterMode();
+    });
+  }
+
+  /**
+   * Asynchronously pulls and parses asset documents out of package assets
+   */
+  static async #loadExternalTemplates() {
+    try {
+      const fileUrl = browser.runtime.getURL("content/controls.html");
+      const response = await fetch(fileUrl);
+      const text = await response.text();
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, "text/html");
+      TheaterMode.#template = doc.getElementById("reelsleek-theater-template");
+    } catch (err) {
+      console.error("[TheaterMode] Error parsing theater template asset file:", err);
+    }
+  }
+
+  /**
+   * Initializes the TheaterMode class layout variables.
+   * @returns {Promise<void>}
+   */
+  static async setup() {
+    await TheaterMode.#loadExternalTemplates();
+    TheaterMode.#attachKeybinds();
+    
+    document.body.addEventListener('fullscreenchange', (e) => {
+      if (e.target == document.body && !document.fullscreenElement) {
+        TheaterMode.setTheaterModeEnabled(false);
+      }
+    });
+  }
+
+  /**
+   * Attaches structural theater elements to specified target interfaces.
+   * @param {HTMLVideoElement} video - The target rendering component video element
+   */
+  static attach(video) {
+    if (video.dataset.reelsleekTheaterModeAttached) return;
+    if (!window.location.href.includes('/reels/')) return;
+
+    // Instantiate the modular component layout block with safe parameters
+    const moduleInstance = new TheaterModeModule(
+      video,
+      TheaterMode.#template,
+      TheaterMode.enabled,
+      TheaterMode.toggleTheaterMode,
+      TheaterMode.#eventsPublisher,
+      TheaterMode.#Event.THEATER_TOGGLE
+    );
+
+    TheaterMode.#videoInstances.set(video, moduleInstance);
+    video.dataset.reelsleekTheaterModeAttached = "true";
+  }
+
+  /**
+   * Detaches and de-allocates module instances from memory.
+   * @param {HTMLVideoElement} video - Target source node
+   */
+  static detach(video) {
+    if (!video.dataset.reelsleekTheaterModeAttached) return;
+
+    const instance = TheaterMode.#videoInstances.get(video);
+    if (instance) {
+      instance.destroy();
+      TheaterMode.#videoInstances.delete(video);
     }
 
-    static #HTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 8c0-2.828 0-4.243.879-5.121C7.757 2 9.172 2 12 2s4.243 0 5.121.879C18 3.757 18 5.172 18 8v8c0 2.828 0 4.243-.879 5.121C16.243 22 14.828 22 12 22s-4.243 0-5.121-.879C6 20.243 6 18.828 6 16z"/><path stroke-linecap="round" d="M21 4.5v15M3 4.5v15" opacity="0.5"/></g></svg>
-    `
+    delete video.dataset.reelsleekTheaterModeAttached;
+  }
 
-    static #ToolbarDepth = 12;
-    /**
-     * Sets the autoscroll state and persists the preference.
-     * @param {boolean} enabled - Whether autoscroll should be enabled
-     */
-    static setTheaterModeEnabled(enabled) {
-        this.enabled = enabled;
-        document.body.classList.toggle('theater-mode-active', enabled);
-        this.#eventsPublisher.publish(this.#Event.THEATER_TOGGLE);
-    }
+  /**
+   * Resets theater toggle component alignments across target updates.
+   */
+  static reset(video) {
+    TheaterMode.detach(video);
+    TheaterMode.attach(video);
+  }
 
-    /**
-     * Toggles the autoscroll state.
-     * @private
-     */
-    static toggleTheaterMode() {
-        if (!VideoControl.fullscreenOn) this.setTheaterModeEnabled(!this.enabled);
-        VideoControl.setFullscreen(false);
-        if (this.enabled) {
-            const fullscreenTarget = document.body;
-            fullscreenTarget.requestFullscreen().catch((err) => {
-                console.error(`Fullscreen error: ${err.message}`);
-            });
-        } else if (document.fullscreenElement) {
-            document.exitFullscreen();
-        }
-    }
-
-    /**
-     * Attaches keyboard event listeners for video control shortcuts.
-     * Supports: Arrow keys (seek), Space/P (play/pause), F (fullscreen)
-     * @private
-     */
-    static #attachKeybinds() {
-        addKeybind("KeyT", () => {
-            if (!PageHandler.isReel()) return;
-            this.toggleTheaterMode();
-        });
-    }
-
-    /**
-     * Initializes the VideoControl class by loading saved states and attaching keyboard shortcuts.
-     * Should be called once on page load.
-     * @returns {Promise<void>}
-     */
-    static async setup() {
-        this.#attachKeybinds();
-        document.body.addEventListener('fullscreenchange', (e) => {
-            if (e.target == document.body && !document.fullscreenElement) {
-                this.setTheaterModeEnabled(false);
-            }
-        })
-    }
-
-    /**
-     * Attaches autoscroll toggle button to the Instagram toolbar and listens for video end events.
-     * Skips if already attached or if the toolbar cannot be found.
-     * @param {HTMLVideoElement} video - The video element to attach autoscroll to
-     */
-    static attach(video) {
-        if (video.dataset.reelsleekTheaterModeAttached) return;
-        if (!window.location.href.includes('/reels/')) return;
-
-        const button = document.createElement("button");
-        button.className = "reelsleek-theater-mode";
-        button.setAttribute("aria-pressed", String(this.enabled));
-        button.setAttribute("aria-label", "Toggle theater mode");
-        button.title = "Toggle theater mode (T)";
-        appendParsedHTML(button, this.#HTML);
-
-        button.addEventListener("click", (e) => {
-            e.stopPropagation();
-            this.toggleTheaterMode();
-        });
-
-        const buttonSubscriber = new EventSubscriber(button);
-        buttonSubscriber.subscribe(this.#Event.THEATER_TOGGLE, () => {
-            button.setAttribute("aria-pressed", String(this.enabled));
-        });
-        this.#eventsPublisher.addSubscriber(buttonSubscriber);
-
-        if (ToolbarMode.isCustom()) {
-            const toolbarContainer = video.parentElement.querySelector('.reelsleek-toolbar-container');
-            if (!toolbarContainer) return;
-            if (toolbarContainer.querySelector('.reelsleek-theater-mode')) return;
-            toolbarContainer.appendChild(button);
-        } else {
-            const parent = video.closest('[style*="--x-width"]');
-            if (!parent) return;
-            const toolbar = parent.nextElementSibling;
-            if (!toolbar) return;
-            if (toolbar.querySelector('.reelsleek-theater-mode')) return;
-            const children = [...toolbar.children];
-            toolbar.insertBefore(button, children[children.length - 2]);
-        }
-
-        video.dataset.reelsleekTheaterModeAttached = "true";
-    }
-
-    /**
-     * Detaches autoscroll button from the toolbar.
-     * @param {HTMLVideoElement} video - The video element whose toolbar contains the button
-     */
-    static detach(video) {
-        if (!video.dataset.reelsleekTheaterModeAttached) return;
-        delete video.dataset.reelsleekTheaterModeAttached;
-
-        // Find button in custom toolbar or native Instagram toolbar
-        const parent = video.closest('[style*="--x-width"]');
-        const toolbar = parent?.nextElementSibling;
-        const button = toolbar?.querySelector('.reelsleek-theater-mode');
-        button?.remove();
-
-    }
-
-    /**
-     * Resets autoscroll button for a video by detaching and reattaching.
-     * @param {HTMLVideoElement} video - The video element to reset autoscroll for
-     */
-    static reset(video) {
-        this.detach(video);
-        this.attach(video);
-    }
-
-    /**
-     * Resets autoscroll buttons for all video elements on the page.
-     */
-    static resetAll() {
-        const videos = getCleanVideos();
-        videos.forEach(video => {
-            this.reset(video);
-        });
-    }
+  /**
+   * Dispatches complete resetting iterations over valid rendering streams.
+   */
+  static resetAll() {
+    getCleanVideos().forEach(video => TheaterMode.reset(video));
+  }
 }

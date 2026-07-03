@@ -1,110 +1,146 @@
+/**
+ * UI & LIFECYCLE MODULE: AudioControlModule
+ * Encapsulates the tracking states and interactive elements of a single video player control layout.
+ */
+class AudioControlModule {
+  constructor(video, templateElement, initialMuted, initialVolume, initialOrientation, eventsPublisher, eventsConfig, actionsConfig) {
+    this.video = video;
+    this.eventsPublisher = eventsPublisher;
+    this.Events = eventsConfig;
+    this.Actions = actionsConfig;
+
+    // 1. Initialize container element and structural shadow node
+    this.container = document.createElement("div");
+    this.container.className = "reelsleek-audio-control";
+    this.container.dataset.orientation = initialOrientation;
+
+    if (!templateElement) return;
+    const clone = document.importNode(templateElement.content, true);
+    this.container.appendChild(clone);
+
+    // 2. Query structural interactions and layout parameters
+    this.slider = this.container.querySelector("input");
+    this.button = this.container.querySelector("button");
+
+    this.slider.value = initialMuted ? 0 : initialVolume * 100;
+    this.slider.setAttribute("orient", initialOrientation);
+    this.button.classList.toggle("muted", initialMuted);
+    this.#updateSliderFill();
+
+    // 3. Inject control interface module directly into the view layout
+    this.video.parentElement.prepend(this.container);
+
+    // 4. Bind listeners and operational state synchronization hooks
+    this.#initListeners();
+    this.#initSubscribers();
+  }
+
+  #updateSliderFill() {
+    this.slider.style.setProperty('--slider-fill', this.slider.value + '%');
+  }
+
+  #initListeners() {
+    this.slider.addEventListener("input", (e) => {
+      e.stopPropagation();
+      this.#updateSliderFill();
+      this.Actions.setVolume(this.slider.value / 100);
+    });
+
+    this.slider.addEventListener("click", (e) => e.stopPropagation());
+
+    this.button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.Actions.toggleMute();
+    });
+
+    // Encapsulated video event sync cycles
+    this.playListener = () => {
+      this.video.volume = AudioControl.volume;
+      this.video.muted = AudioControl.muted;
+    };
+
+    this.volumeChangeListener = () => {
+      if (this.video.volume !== AudioControl.volume) {
+        this.video.volume = AudioControl.volume;
+      }
+      if (this.video.muted !== AudioControl.muted) {
+        this.video.muted = AudioControl.muted;
+      }
+    };
+
+    this.video.addEventListener('play', this.playListener);
+    this.video.addEventListener('volumechange', this.volumeChangeListener);
+  }
+
+  #initSubscribers() {
+    this.containerSubscriber = new EventSubscriber(this.container);
+    this.containerSubscriber.subscribe(this.Events.ORIENT_CHANGE, () => {
+      this.container.dataset.orientation = AudioControl.orientation;
+    });
+
+    this.sliderSubscriber = new EventSubscriber(this.slider);
+    this.sliderSubscriber.subscribe(this.Events.VOLUME_CHANGE, () => {
+      this.slider.value = AudioControl.volume * 100;
+      this.#updateSliderFill();
+    });
+    this.sliderSubscriber.subscribe(this.Events.MUTE_CHANGE, () => {
+      this.slider.value = AudioControl.muted ? 0 : AudioControl.volume * 100;
+      this.#updateSliderFill();
+    });
+    this.sliderSubscriber.subscribe(this.Events.ORIENT_CHANGE, () => {
+      this.slider.setAttribute("orient", AudioControl.orientation);
+    });
+
+    this.buttonSubscriber = new EventSubscriber(this.button);
+    this.buttonSubscriber.subscribe(this.Events.MUTE_CHANGE, () => {
+      this.button.classList.toggle("muted", AudioControl.muted);
+    });
+
+    this.eventsPublisher.addSubscriber(this.containerSubscriber);
+    this.eventsPublisher.addSubscriber(this.sliderSubscriber);
+    this.eventsPublisher.addSubscriber(this.buttonSubscriber);
+  }
+
+  destroy() {
+    // Clean up bound media loops
+    if (this.playListener) this.video.removeEventListener('play', this.playListener);
+    if (this.volumeChangeListener) this.video.removeEventListener('volumechange', this.volumeChangeListener);
+
+    // Wipe layout node from structural layout tree
+    this.container?.remove();
+  }
+}
 
 /**
- * Manages audio/volume controls for videos including mute button and volume slider.
- * Syncs with Instagram's native mute button and persists user preferences.
+ * MAIN CONTROLLER / ORCHESTRATOR
+ * Manages extension persistence boundaries, state transitions, and platform button alignment tracking.
  */
 class AudioControl {
-  /** @type {boolean} Whether audio is muted */
   static muted = false;
-
-  /** @type {number} Volume level (0.0 to 1.0) */
   static volume = 0.1;
-
-  /** @type {string} Orientation of the volume slider ("horizontal" or "vertical") */
   static orientation = "horizontal";
-
-  /** @type {boolean} Whether the volume control is always visible */
   static alwaysVisible = true;
 
   static #saveTimer = null;
   static #nativeSynced = false;
   static #eventsPublisher = new EventPublisher();
+  static #template = null;
 
-  /** @type {WeakMap<HTMLVideoElement, Function>} Stores event listeners for cleanup */
-  static #videoListeners = new WeakMap();
+  static #videoInstances = new WeakMap();
 
   static #Event = {
     "VOLUME_CHANGE": "volume-change",
     "MUTE_CHANGE": "mute-change",
     "ORIENT_CHANGE": "orient-change",
     "VISIBILITY_CHANGE": "visibility-change",
-  }
+  };
 
   static #StorageKeys = {
     "volumeKey": "reelsleek-audiocontrol-volume",
     "orientKey": "reelsleek-audiocontrol-orientation",
     "visibilityKey": "reelsleek-audiocontrol-visibility",
-  }
+  };
 
-  static #HTML = `
-    <button class="reelsleek-mute-button" aria-label="Toggle mute">
-      <svg class="reelsleek-volume-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path class="reelsleek-vi-speaker" d="
-          M2.003 11.716C2.04 9.873 2.059 8.952 2.671 8.164
-          C2.783 8.02 2.947 7.849 3.084 7.733
-          C3.836 7.097 4.83 7.097 6.817 7.097
-          C7.527 7.097 7.882 7.097 8.22 7.005
-          C8.291 6.985 8.36 6.963 8.429 6.938
-          C8.759 6.817 9.056 6.608 9.649 6.192
-          L14.138 4.082
-          C14.326 4.151 14.508 4.25 14.671 4.372
-          C15.519 5.007 15.584 6.487 15.713 9.445
-          C15.761 10.541 15.793 11.479 15.793 12
-          C15.793 12.522 15.761 13.459 15.713 14.555
-          C15.584 17.513 15.519 18.993 14.671 19.628
-          C14.508 19.75 14.326 19.849 14.138 19.918
-          L9.649 17.808
-          C9.056 17.392 8.759 17.183 8.429 17.062
-          C8.36 17.037 8.291 17.015 8.22 16.996
-          C7.882 16.903 7.527 16.903 6.817 16.903
-          C4.83 16.903 3.836 16.903 3.084 16.267
-          C2.947 16.151 2.783 15.98 2.671 15.836
-          C2.059 15.048 2.04 14.127 2.003 12.285
-          C2.001 12.188 2 12.093 2 12
-          C2 11.907 2.001 11.812 2.003 11.716Z
-        " fill="#fff"/>
-        <g class="reelsleek-vi-waves">
-          <path opacity="0.5" d="
-            M19.489 5.552C19.782 5.292 20.217 5.334 20.461 5.646
-            C21.2 6.6 21.639 8.082 21.9 9.85
-            C22 10.541 22 11.279 22 12
-            C22 12.721 22 13.459 21.9 14.15
-            C21.639 15.918 21.2 17.4 20.461 18.354
-            C20.217 18.666 19.782 18.708 19.489 18.448
-            C19.198 18.19 19.158 17.729 19.398 17.417
-            C19.96 16.68 20.337 15.419 20.565 13.795
-            C20.655 13.161 20.655 10.839 20.565 10.205
-            C20.337 8.581 19.96 7.32 19.398 6.583
-            C19.158 6.271 19.198 5.81 19.489 5.552Z
-          " fill="#fff"/>
-          <path opacity="0.8" d="
-            M17.757 8.416C18.09 8.219 18.51 8.347 18.695 8.702
-            C19.07 9.415 19.241 10.545 19.241 12
-            C19.241 13.455 19.07 14.585 18.695 15.298
-            C18.51 15.653 18.09 15.781 17.757 15.585
-            C17.427 15.389 17.306 14.947 17.485 14.594
-            C17.754 14.065 17.862 13.127 17.862 12
-            C17.862 10.873 17.754 9.935 17.485 9.406
-            C17.306 9.053 17.427 8.611 17.757 8.416Z
-          " fill="#fff"/>
-        </g>
-        <line class="reelsleek-vi-slash"
-          x1="20.5" y1="3.5" x2="3.5" y2="20.5"
-          stroke="#fff" stroke-width="1.8" stroke-linecap="round"
-        />
-      </svg>
-    </button>
-    <div class="reelsleek-slider-container">
-      <input type="range" class="reelsleek-volume-slider" min="0" max="100" aria-label="Volume">
-    </div>
-  `;
-
-  /**
-   * Finds Instagram's native mute button in the DOM.
-   * @param {HTMLVideoElement} [video] - Optional video element to search from
-   * @returns {HTMLElement|null} The native mute button element or null if not found
-   * @private
-   */
   static #findNativeMuteButton(video) {
     if (!VideoControl.currentlyPlayingVideo && !video) return null;
     const targetVideo = video || VideoControl.currentlyPlayingVideo;
@@ -112,290 +148,181 @@ class AudioControl {
     const svg = targetDiv.querySelector(
       'div[role="group"] div > div[role="button"] > svg, div[role="group"] div.html-div > button > div > svg',
     );
-    if (!svg) return;
+    if (!svg) return null;
     return svg.closest('button, [role="button"]');
   }
 
-  /**
-   * Clicks Instagram's native mute button if found.
-   * @private
-   */
   static #clickNativeMuteButton() {
-    const button = this.#findNativeMuteButton();
+    const button = AudioControl.#findNativeMuteButton();
     if (!button) return;
     button.click();
   }
 
-  /**
-   * Syncs with Instagram's native mute button on first page load.
-   * Only runs once per page load.
-   * @private
-   */
   static #syncNativeMuteOnFirstLoad() {
-    if (this.#nativeSynced) return;
-    this.#clickNativeMuteButton();
+    if (AudioControl.#nativeSynced) return;
+    AudioControl.#clickNativeMuteButton();
 
     const video = [...document.querySelectorAll("video")].find(
       (v) => !v.src || v.src.startsWith("blob"),
     );
-    if (video && video.muted !== this.muted) {
-      this.#clickNativeMuteButton();
+    if (video && video.muted !== AudioControl.muted) {
+      AudioControl.#clickNativeMuteButton();
     }
 
-    this.#nativeSynced = true;
+    AudioControl.#nativeSynced = true;
   }
 
-  /**
-   * Sets the muted state and syncs with native button and video elements.
-   * @param {boolean} muted - Whether to mute the audio
-   * @private
-   */
-  static #setMuted(muted) {
-    this.muted = muted;
-    this.#clickNativeMuteButton();
-    console.debug('[AudioControl] Setting muted state to:', muted);
-    this.#eventsPublisher.publish(this.#Event.MUTE_CHANGE);
-    VideoControl.currentlyPlayingVideo.volume = this.volume
-    VideoControl.currentlyPlayingVideo.muted = this.muted
-  }
-
-  /**
-   * Toggles the mute state. If unmuting with zero volume, sets volume to 10%.
-   * @private
-   */
-  static #toggleMute() {
-    this.#setMuted(!this.muted);
-    if (!this.muted && this.volume == 0) {
-      this.#setVolume(0.1);
+  static setMuted(muted) {
+    AudioControl.muted = muted;
+    AudioControl.#clickNativeMuteButton();
+    AudioControl.#eventsPublisher.publish(AudioControl.#Event.MUTE_CHANGE);
+    
+    if (VideoControl.currentlyPlayingVideo) {
+      VideoControl.currentlyPlayingVideo.volume = AudioControl.volume;
+      VideoControl.currentlyPlayingVideo.muted = AudioControl.muted;
     }
   }
 
-  /**
-   * Sets the volume level and updates mute state if necessary.
-   * @param {number} volume - Volume level (0.0 to 1.0)
-   * @private
-   */
-  static #setVolume(volume) {
-    this.volume = volume;
-    if (this.volume > 0 && this.muted) {
-      this.#toggleMute();
-    } else if (this.volume === 0 && !this.muted) {
-      this.#toggleMute();
+  static toggleMute() {
+    AudioControl.setMuted(!AudioControl.muted);
+    if (!AudioControl.muted && AudioControl.volume === 0) {
+      AudioControl.setVolume(0.1);
     }
-    // await this.#syncNativeVolumeSlider(this.volume);
-    this.#eventsPublisher.publish(this.#Event.VOLUME_CHANGE);
-    this.#saveStates();
-    VideoControl.currentlyPlayingVideo.volume = this.volume
-    VideoControl.currentlyPlayingVideo.muted = this.muted
   }
 
-  /**
-   * Sets the orientation of the volume slider and persists the preference.
-   * @param {string} orientation - "horizontal" or "vertical"
-   */
+  static setVolume(volume) {
+    AudioControl.volume = volume;
+    if (AudioControl.volume > 0 && AudioControl.muted) {
+      AudioControl.toggleMute();
+    } else if (AudioControl.volume === 0 && !AudioControl.muted) {
+      AudioControl.toggleMute();
+    }
+    
+    AudioControl.#eventsPublisher.publish(AudioControl.#Event.VOLUME_CHANGE);
+    AudioControl.#saveStates();
+
+    if (VideoControl.currentlyPlayingVideo) {
+      VideoControl.currentlyPlayingVideo.volume = AudioControl.volume;
+      VideoControl.currentlyPlayingVideo.muted = AudioControl.muted;
+    }
+  }
+
   static setOrientation(orientation) {
-    this.orientation = orientation;
-    this.#eventsPublisher.publish(this.#Event.ORIENT_CHANGE);
-    this.#saveStates();
+    AudioControl.orientation = orientation;
+    AudioControl.#eventsPublisher.publish(AudioControl.#Event.ORIENT_CHANGE);
+    AudioControl.#saveStates();
   }
 
-  /**
-   * Sets whether the volume control is always visible and persists the preference.
-   * @param {boolean} visibility - Whether the control should always be visible
-   */
   static setVisibility(visibility) {
-    this.alwaysVisible = visibility;
-    this.#eventsPublisher.publish(this.#Event.VISIBILITY_CHANGE);
+    AudioControl.alwaysVisible = visibility;
+    AudioControl.#eventsPublisher.publish(AudioControl.#Event.VISIBILITY_CHANGE);
     document.body.classList.toggle("reelsleek-volume-always-visible", visibility);
-    this.#saveStates();
+    AudioControl.#saveStates();
   }
 
-  /**
-   * Saves current audio control state to browser storage with debouncing.
-   * @private
-   */
   static #saveStates() {
-    clearTimeout(this.#saveTimer);
-    this.#saveTimer = setTimeout(() => {
+    clearTimeout(AudioControl.#saveTimer);
+    AudioControl.#saveTimer = setTimeout(() => {
       browser.storage.local.set({
-        [this.#StorageKeys.orientKey]: this.orientation,
-        [this.#StorageKeys.visibilityKey]: this.alwaysVisible,
-        [this.#StorageKeys.volumeKey]: this.volume > 0 ? this.volume : 0.1
+        [AudioControl.#StorageKeys.orientKey]: AudioControl.orientation,
+        [AudioControl.#StorageKeys.visibilityKey]: AudioControl.alwaysVisible,
+        [AudioControl.#StorageKeys.volumeKey]: AudioControl.volume > 0 ? AudioControl.volume : 0.1
       });
     }, 300);
   }
 
-  /**
-   * Loads saved audio control state from browser storage.
-   * @private
-   * @returns {Promise<void>}
-   */
   static async #loadStates() {
     const result = await browser.storage.local.get([
-      this.#StorageKeys.volumeKey,
-      this.#StorageKeys.orientKey,
-      this.#StorageKeys.visibilityKey,
+      AudioControl.#StorageKeys.volumeKey,
+      AudioControl.#StorageKeys.orientKey,
+      AudioControl.#StorageKeys.visibilityKey,
     ]);
 
-    this.volume = result[this.#StorageKeys.volumeKey] ?? this.volume
-    this.orientation = result[this.#StorageKeys.orientKey] ?? this.orientation
-    this.alwaysVisible = result[this.#StorageKeys.visibilityKey] ?? this.alwaysVisible
+    AudioControl.volume = result[AudioControl.#StorageKeys.volumeKey] ?? AudioControl.volume;
+    AudioControl.orientation = result[AudioControl.#StorageKeys.orientKey] ?? AudioControl.orientation;
+    AudioControl.alwaysVisible = result[AudioControl.#StorageKeys.visibilityKey] ?? AudioControl.alwaysVisible;
   }
 
-  /**
-   * Attaches keyboard event listeners for audio control shortcuts.
-   * Supports: M (mute toggle), - (volume down), = (volume up)
-   * @private
-   */
   static #attachKeybinds() {
-    addKeybind("KeyM", () => this.#toggleMute());
-    addKeybind("Minus", () => this.#setVolume(Math.max(this.volume - 0.1, 0)));
-    addKeybind("Equal", () => this.#setVolume(Math.min(this.volume + 0.1, 1)));
+    addKeybind("KeyM", () => AudioControl.toggleMute());
+    addKeybind("Minus", () => AudioControl.setVolume(Math.max(AudioControl.volume - 0.1, 0)));
+    addKeybind("Equal", () => AudioControl.setVolume(Math.min(AudioControl.volume + 0.1, 1)));
   }
 
-  /**
-   * Initializes the AudioControl class by loading saved states and attaching keyboard shortcuts.
-   * Should be called once on page load.
-   * @returns {Promise<void>}
-   */
+  static async #loadExternalTemplates() {
+    try {
+      const fileUrl = browser.runtime.getURL("content/controls.html");
+      const response = await fetch(fileUrl);
+      const text = await response.text();
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, "text/html");
+      AudioControl.#template = doc.getElementById("reelsleek-audio-template");
+    } catch (err) {
+      console.error("[AudioControl] Error parsing audio template asset file:", err);
+    }
+  }
+
   static async setup() {
-    await this.#loadStates();
-    this.#attachKeybinds();
-    document.body.classList.toggle("reelsleek-volume-always-visible", this.alwaysVisible);
+    await AudioControl.#loadExternalTemplates();
+    await AudioControl.#loadStates();
+    AudioControl.#attachKeybinds();
+    document.body.classList.toggle("reelsleek-volume-always-visible", AudioControl.alwaysVisible);
   }
 
-  /**
-   * Attaches audio controls (mute button and volume slider) to a video element.
-   * Skips if already attached. Syncs with Instagram's native mute button on first load.
-   * @param {HTMLVideoElement} video - The video element to attach controls to
-   */
   static attach(video) {
-    if(PageHandler.isStorie()) return;
-    this.#syncNativeMuteOnFirstLoad();
+    if (PageHandler.isStorie()) return;
+    AudioControl.#syncNativeMuteOnFirstLoad();
 
     if (video.dataset.reelsleekAudioControlAttached) return;
-    video.volume = this.volume;
-    video.muted = this.muted;
+    video.volume = AudioControl.volume;
+    video.muted = AudioControl.muted;
 
-    const container = document.createElement("div");
-    container.className = "reelsleek-audio-control";
-    container.dataset.orientation = this.orientation;
-    appendParsedHTML(container, this.#HTML);
-    video.parentElement.prepend(container);
-
-    {
-      const containerSubscriber = new EventSubscriber(container);
-      containerSubscriber.subscribe(this.#Event.ORIENT_CHANGE, () => {
-        container.dataset.orientation = this.orientation;
-      })
-      this.#eventsPublisher.addSubscriber(containerSubscriber);
-    }
-
-    const slider = container.querySelector("input");
-    slider.value = this.muted ? 0 : this.volume * 100;
-    slider.setAttribute("orient", this.orientation);
-
-    const updateSliderFill = (s) => s.style.setProperty('--slider-fill', s.value + '%');
-    updateSliderFill(slider);
-
-    // ── Setup Events that affect volume slider ────────────────────────────────
-    {
-      const sliderSubscriber = new EventSubscriber(slider);
-      sliderSubscriber.subscribe(this.#Event.VOLUME_CHANGE, () => {
-        slider.value = this.volume * 100;
-        updateSliderFill(slider);
-      })
-      sliderSubscriber.subscribe(this.#Event.MUTE_CHANGE, () => {
-        if (this.muted) slider.value = 0;
-        else slider.value = this.volume * 100;
-        updateSliderFill(slider);
-      })
-      sliderSubscriber.subscribe(this.#Event.ORIENT_CHANGE, () => {
-        slider.setAttribute("orient", this.orientation);
-      })
-      this.#eventsPublisher.addSubscriber(sliderSubscriber);
-    }
-
-    const button = container.querySelector("button");
-    button.classList.toggle("muted", this.muted);
-
-    // ── Setup Events that affect mute button ──────────────────────────────────
-    {
-      const buttonSubscriber = new EventSubscriber(button);
-      buttonSubscriber.subscribe(this.#Event.MUTE_CHANGE, () => {
-        button.classList.toggle("muted", this.muted);
+    if (!AudioControl.#template) {
+      AudioControl.#loadExternalTemplates().then(() => {
+        if (AudioControl.#template && !video.dataset.reelsleekAudioControlAttached) {
+          AudioControl.attach(video);
+        }
       });
-      this.#eventsPublisher.addSubscriber(buttonSubscriber);
+      return;
     }
 
-    slider.addEventListener("input", async (e) => {
-      e.stopPropagation();
-      updateSliderFill(slider);
-      await this.#setVolume(slider.value / 100);
-    });
-    slider.addEventListener("click", (e) => e.stopPropagation());
-
-    button.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      await this.#toggleMute();
-    });
-
-    // Store event listener for cleanup
-    const playListener = () => {
-      video.volume = this.volume;
-      video.muted = this.muted;
-    };
-    video.addEventListener('play', playListener);
-    this.#videoListeners.set(video, playListener);
-
-    // Sync video volume changes back to AudioControl state
-    const volumeChangeListener = () => {
-      if (video.volume !== this.volume) {
-        video.volume = this.volume;
+    const moduleInstance = new AudioControlModule(
+      video,
+      AudioControl.#template,
+      AudioControl.muted,
+      AudioControl.volume,
+      AudioControl.orientation,
+      AudioControl.#eventsPublisher,
+      AudioControl.#Event,
+      {
+        setVolume: AudioControl.setVolume,
+        toggleMute: AudioControl.toggleMute
       }
-      if (video.muted !== this.muted) {
-        video.muted = this.muted;
-      }
-    };
-    video.addEventListener('volumechange', volumeChangeListener);
-    this.#videoListeners.set(video, volumeChangeListener);
+    );
 
+    AudioControl.#videoInstances.set(video, moduleInstance);
     video.dataset.reelsleekAudioControlAttached = "true";
   }
 
-  /**
-   * Detaches audio controls from a video element.
-   * @param {HTMLVideoElement} video - The video element to detach controls from
-   */
   static detach(video) {
-    // Remove event listener from video
-    const playListener = this.#videoListeners.get(video);
-    if (playListener) {
-      video.removeEventListener('play', playListener);
-      this.#videoListeners.delete(video);
+    if (!video.dataset.reelsleekAudioControlAttached) return;
+
+    const instance = AudioControl.#videoInstances.get(video);
+    if (instance) {
+      instance.destroy();
+      AudioControl.#videoInstances.delete(video);
     }
 
-    video.parentElement.querySelector('.reelsleek-audio-control').remove()
     delete video.dataset.reelsleekAudioControlAttached;
   }
 
-  /**
-   * Resets audio controls for a video by detaching and reattaching.
-   * @param {HTMLVideoElement} video - The video element to reset controls for
-   */
   static reset(video) {
-    this.detach(video);
-    this.attach(video);
+    AudioControl.detach(video);
+    AudioControl.attach(video);
   }
 
-  /**
-   * Resets audio controls for all video elements on the page.
-   */
   static resetAll() {
-    const videos = getCleanVideos()
-    videos.forEach(v => {
-      this.reset(v);
-    });
+    getCleanVideos().forEach(v => AudioControl.reset(v));
   }
-
 }
