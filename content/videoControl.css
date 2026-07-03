@@ -122,6 +122,33 @@ body.reelsleek-seekbar-always-visible .reelsleek-video-control {
   }
 }
 
+/* ── Seekbar Tooltip Preview ── */
+
+.reelsleek-seekbar-tooltip {
+  position: absolute;
+  bottom: 16px;
+  /* Positioned right above the expanded track */
+  left: 0;
+  transform: translateX(-50%);
+  background-color: #6b6b6ba2;
+  color: #fff;
+  padding: 4px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: sans-serif;
+  pointer-events: none;
+  /* Prevents the tooltip from hijacking mouse events */
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 1001;
+  white-space: nowrap;
+}
+
+/* Reveal tooltip when hovering over the control zone */
+.reelsleek-video-control:hover .reelsleek-seekbar-tooltip {
+  opacity: 1;
+}
+
 /* ── Fullscreen container (native toolbar mode) ── */
 
 .reelsleek-fullscreen-container {

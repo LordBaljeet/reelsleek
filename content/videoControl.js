@@ -35,6 +35,7 @@ class VideoControl {
     <div class="reelsleek-seekbar-track"></div>
     <div class="reelsleek-seekbar-fill"></div>
     <input type="range" class="reelsleek-seekbar" min="0" max="100" step="any" aria-label="Seek">
+    <div class="reelsleek-seekbar-tooltip">0:00</div>
   `;
 
   static #FULLSCREEN_HTML = `
@@ -72,7 +73,7 @@ class VideoControl {
     if (this.fullscreenOn) {
       const fullscreenTarget = video.parentElement.parentElement;
       fullscreenTarget.requestFullscreen().catch((err) => {
-        console.error(`Fullscreen error: ${err.message}`);
+        console.error(`[VideoControl] Fullscreen error: ${err.message}`);
       });
       if (video != this.currentlyPlayingVideo) {
         video.play()
@@ -174,20 +175,34 @@ class VideoControl {
 
     const seekbar = seekbarContainer.querySelector("input");
     const fillEl = seekbarContainer.querySelector(".reelsleek-seekbar-fill");
+    const tooltipEl = seekbarContainer.querySelector(".reelsleek-seekbar-tooltip");
 
-    // ── CSS Compositor Sync Logic ──
+    // Helper: Formats video seconds into readable strings (e.g., 124 -> "2:04")
+    const formatTime = (seconds) => {
+      if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+
+      const paddedSeconds = s.toString().padStart(2, "0");
+      if (h > 0) {
+        const paddedMinutes = m.toString().padStart(2, "0");
+        return `${h}:${paddedMinutes}:${paddedSeconds}`;
+      }
+      return `${m}:${paddedSeconds}`;
+    };
+
+    // ── Pure CSS Compositor Sync Logic ──
     const syncPlay = () => {
       if (!isFinite(video.duration) || isSeeking || video.paused) return;
 
       const currentProgress = video.currentTime / video.duration;
       const remainingTime = (video.duration - video.currentTime) / (video.playbackRate || 1);
 
-      // Instantly position the bar at the exact current frame
       fillEl.style.transition = 'none';
       fillEl.style.transform = `scaleX(${currentProgress})`;
-      fillEl.offsetHeight; // Force reflow
+      fillEl.offsetHeight; // force reflow
 
-      // Hand off the linear progress to the GPU
       fillEl.style.transition = `transform ${remainingTime}s linear, height 0.1s`;
       fillEl.style.transform = 'scaleX(1)';
     };
@@ -197,13 +212,36 @@ class VideoControl {
 
       const currentProgress = video.currentTime / video.duration;
 
-      // Kill the transition immediately and lock the bar position
       fillEl.style.transition = 'none';
       fillEl.style.transform = `scaleX(${currentProgress})`;
       seekbar.value = `${currentProgress * 100}`;
     };
 
-    // Range Input Interaction Event Listeners
+    // ── Hover Timestamp Tracking with Boundary Clamping ──
+    seekbarContainer.addEventListener("mousemove", (e) => {
+      if (!isFinite(video.duration)) return;
+
+      const rect = seekbarContainer.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(1, offsetX / rect.width));
+      const targetTime = percentage * video.duration;
+
+      // 1. Update text content first so offsetWidth calculates accurately
+      tooltipEl.textContent = formatTime(targetTime);
+
+      // 2. Measure the tooltip and find its half-width boundary
+      const tooltipWidth = tooltipEl.offsetWidth;
+      const halfTooltipWidth = tooltipWidth / 2;
+
+      // 3. Clamp the center point so it never goes off-screen
+      // Keeps the left edge >= 0 and the right edge <= container width
+      const clampedX = Math.max(halfTooltipWidth, Math.min(rect.width - halfTooltipWidth, offsetX));
+
+      // 4. Position via pixels instead of percentages for absolute precision
+      tooltipEl.style.left = `${clampedX}px`;
+    });
+
+    // Interaction Overrides
     seekbar.addEventListener("mousedown", () => { isSeeking = true; fillEl.style.transition = 'none'; });
     seekbar.addEventListener("touchstart", () => { isSeeking = true; fillEl.style.transition = 'none'; });
 
@@ -261,12 +299,12 @@ class VideoControl {
     });
     playContainer.addEventListener("click", (e) => {
       e.stopPropagation();
-      video.paused ? video.play() : video.pause();
+      this.#togglePlay(video);
     });
 
     video.parentElement.prepend(playContainer);
 
-    // ── Engine Core Event Attachments ──
+    // Operational Core Event Attachments
     const playListener = () => {
       seekbarContainer.dataset.showPaused = "false";
       playContainer.dataset.showPaused = "false";
@@ -298,12 +336,10 @@ class VideoControl {
       if (!video.paused) syncPlay();
     };
 
-    // Catch buffer starvation stall
     const waitingListener = () => {
       syncPause();
     };
 
-    // Catch recovery transition kickoff
     const playingListener = () => {
       syncPlay();
     };
