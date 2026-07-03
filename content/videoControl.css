@@ -12,6 +12,35 @@
   z-index: 1000;
 }
 
+/* Base track layer (Uncompleted portion) */
+.reelsleek-seekbar-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: #6b6b6ba2;
+  z-index: 998;
+  pointer-events: none;
+  transition: height 0.1s;
+}
+
+/* Dynamic fill layer (Completed portion) */
+.reelsleek-seekbar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: #fff;
+  transform-origin: left;
+  transform: scaleX(0);
+  z-index: 999;
+  pointer-events: none;
+  transition: height 0.1s;
+  /* Overridden dynamically in JS for transform speeds */
+}
+
 .reelsleek-seekbar {
   appearance: none;
   -webkit-appearance: none;
@@ -20,15 +49,16 @@
   left: 0;
   width: 100%;
   height: 5px;
-  /* Gradient fill: --seek-fill is updated by JS as the video plays */
-  background: linear-gradient(to right, #fff var(--seek-fill, 0%), #6b6b6ba2 var(--seek-fill, 0%));
+  background: transparent;
+  /* Made transparent to show custom layers beneath */
   outline: none;
   cursor: pointer;
   margin: 0;
   z-index: 1000;
+  transition: height 0.1s;
 }
 
-/* Chrome: transparent track so the element gradient background shows through */
+/* Chrome: transparent track so the element layers show through */
 .reelsleek-seekbar::-webkit-slider-runnable-track {
   height: 100%;
   border: none;
@@ -48,7 +78,7 @@
   cursor: pointer;
 }
 
-/* Firefox: transparent track so the element gradient background shows through */
+/* Firefox: transparent track */
 .reelsleek-seekbar::-moz-range-track {
   height: 100%;
   background: transparent;
@@ -63,14 +93,10 @@
   border: none;
 }
 
-/* Firefox: belt-and-suspenders fill on top of the gradient */
-.reelsleek-seekbar::-moz-range-progress {
-  background: #fff;
-  height: 100%;
-}
-
-/* Expand track on hover */
-.reelsleek-video-control:hover .reelsleek-seekbar {
+/* Expand track layers on hover */
+.reelsleek-video-control:hover .reelsleek-seekbar,
+.reelsleek-video-control:hover .reelsleek-seekbar-track,
+.reelsleek-video-control:hover .reelsleek-seekbar-fill {
   height: 100%;
 }
 
@@ -83,7 +109,7 @@ body.reelsleek-seekbar-always-visible .reelsleek-video-control {
   opacity: 1;
 }
 
-/* Show thumb + full opacity when paused */
+/* Show thumb when paused */
 .reelsleek-video-control[data-show-paused="true"] {
   opacity: 1;
 

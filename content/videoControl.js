@@ -25,14 +25,16 @@ class VideoControl {
    */
   static setCurrentlyPlayingVideo(video, firstLoad = false) {
     if (firstLoad && this.currentlyPlayingVideo) return;
-    if(this.currentlyPlayingVideo != video) {
+    if (this.currentlyPlayingVideo != video) {
       this.currentlyPlayingVideo?.pause();
     }
     this.currentlyPlayingVideo = video;
   }
 
   static #SEEKBAR_HTML = `
-    <input type="range" class="reelsleek-seekbar" min="0" max="100" aria-label="Seek">
+    <div class="reelsleek-seekbar-track"></div>
+    <div class="reelsleek-seekbar-fill"></div>
+    <input type="range" class="reelsleek-seekbar" min="0" max="100" step="any" aria-label="Seek">
   `;
 
   static #FULLSCREEN_HTML = `
@@ -72,7 +74,7 @@ class VideoControl {
       fullscreenTarget.requestFullscreen().catch((err) => {
         console.error(`Fullscreen error: ${err.message}`);
       });
-      if(video != this.currentlyPlayingVideo) {
+      if (video != this.currentlyPlayingVideo) {
         video.play()
       }
       this.setCurrentlyPlayingVideo(video);
@@ -130,7 +132,7 @@ class VideoControl {
     addKeybind("KeyF", () => {
       this.#toggleFullscreen(this.currentlyPlayingVideo);
     });
-    
+
   }
 
   /**
@@ -171,27 +173,61 @@ class VideoControl {
     let isSeeking = false;
 
     const seekbar = seekbarContainer.querySelector("input");
-    seekbar.addEventListener("mousedown", () => { isSeeking = true; });
-    seekbar.addEventListener("touchstart", () => { isSeeking = true; });
-    seekbar.addEventListener("mouseup", () => { isSeeking = false; });
-    seekbar.addEventListener("touchend", () => { isSeeking = false; });
+    const fillEl = seekbarContainer.querySelector(".reelsleek-seekbar-fill");
+
+    // ── CSS Compositor Sync Logic ──
+    const syncPlay = () => {
+      if (!isFinite(video.duration) || isSeeking || video.paused) return;
+
+      const currentProgress = video.currentTime / video.duration;
+      const remainingTime = (video.duration - video.currentTime) / (video.playbackRate || 1);
+
+      // Instantly position the bar at the exact current frame
+      fillEl.style.transition = 'none';
+      fillEl.style.transform = `scaleX(${currentProgress})`;
+      fillEl.offsetHeight; // Force reflow
+
+      // Hand off the linear progress to the GPU
+      fillEl.style.transition = `transform ${remainingTime}s linear, height 0.1s`;
+      fillEl.style.transform = 'scaleX(1)';
+    };
+
+    const syncPause = () => {
+      if (!isFinite(video.duration)) return;
+
+      const currentProgress = video.currentTime / video.duration;
+
+      // Kill the transition immediately and lock the bar position
+      fillEl.style.transition = 'none';
+      fillEl.style.transform = `scaleX(${currentProgress})`;
+      seekbar.value = `${currentProgress * 100}`;
+    };
+
+    // Range Input Interaction Event Listeners
+    seekbar.addEventListener("mousedown", () => { isSeeking = true; fillEl.style.transition = 'none'; });
+    seekbar.addEventListener("touchstart", () => { isSeeking = true; fillEl.style.transition = 'none'; });
+
+    seekbar.addEventListener("mouseup", () => {
+      isSeeking = false;
+      if (!video.paused) syncPlay();
+    });
+    seekbar.addEventListener("touchend", () => {
+      isSeeking = false;
+      if (!video.paused) syncPlay();
+    });
 
     seekbar.addEventListener("input", (e) => {
       e.stopPropagation();
       if (!isFinite(video.duration)) return;
-      video.currentTime = video.duration * (seekbar.value / 100);
-      seekbar.style.setProperty('--seek-fill', seekbar.value + '%');
-      seekbar.blur();
+
+      const progress = seekbar.value / 100;
+      video.currentTime = video.duration * progress;
+
+      fillEl.style.transition = 'none';
+      fillEl.style.transform = `scaleX(${progress})`;
     });
 
     seekbar.addEventListener("click", (e) => e.stopPropagation());
-
-    // Store event listeners for cleanup
-    const timeupdateListener = () => {
-      if (isSeeking || !isFinite(video.duration)) return;
-      seekbar.value = `${(video.currentTime / video.duration) * 100}`;
-      seekbar.style.setProperty('--seek-fill', seekbar.value + '%');
-    };
 
     if (ToolbarMode.isCustom()) {
       const toolbarContainer = video.parentElement.querySelector('.reelsleek-toolbar-container');
@@ -210,7 +246,7 @@ class VideoControl {
         e.stopPropagation();
         this.#toggleFullscreen(video);
       });
-      if(!PageHandler.isStorie()) {
+      if (!PageHandler.isStorie()) {
         video.parentElement.prepend(fullscreenContainer);
       }
     }
@@ -222,85 +258,78 @@ class VideoControl {
     playContainer.addEventListener("dblclick", (e) => {
       e.stopPropagation();
       this.#toggleFullscreen(video);
-    })
+    });
     playContainer.addEventListener("click", (e) => {
       e.stopPropagation();
       video.paused ? video.play() : video.pause();
-    })
+    });
 
     video.parentElement.prepend(playContainer);
 
+    // ── Engine Core Event Attachments ──
     const playListener = () => {
       seekbarContainer.dataset.showPaused = "false";
       playContainer.dataset.showPaused = "false";
       let targetVideo = video;
-      if(this.fullscreenOn && video != this.currentlyPlayingVideo) {
+      if (this.fullscreenOn && video != this.currentlyPlayingVideo) {
         video.pause();
         targetVideo = this.currentlyPlayingVideo;
       }
       this.setCurrentlyPlayingVideo(targetVideo);
+
+      syncPlay();
     };
 
     const pauseListener = () => {
       seekbarContainer.dataset.showPaused = "true";
       playContainer.dataset.showPaused = "true";
+
+      syncPause();
     };
 
-    video.addEventListener("timeupdate", timeupdateListener);
+    const seekedListener = () => {
+      if (!isSeeking) {
+        if (!video.paused) syncPlay();
+        else syncPause();
+      }
+    };
+
+    const ratechangeListener = () => {
+      if (!video.paused) syncPlay();
+    };
+
+    // Catch buffer starvation stall
+    const waitingListener = () => {
+      syncPause();
+    };
+
+    // Catch recovery transition kickoff
+    const playingListener = () => {
+      syncPlay();
+    };
+
     video.addEventListener("play", playListener);
     video.addEventListener("pause", pauseListener);
+    video.addEventListener("seeked", seekedListener);
+    video.addEventListener("ratechange", ratechangeListener);
+    video.addEventListener("waiting", waitingListener);
+    video.addEventListener("playing", playingListener);
 
-    // Store all listeners in WeakMap for cleanup
     this.#videoListeners.set(video, {
-      timeupdate: timeupdateListener,
       play: playListener,
       pause: pauseListener,
+      seeked: seekedListener,
+      ratechange: ratechangeListener,
+      waiting: waitingListener,
+      playing: playingListener
     });
 
-    // Storie extra styling for better visibility
-    if(!PageHandler.isStorie()) return;
+    if (!PageHandler.isStorie()) return;
     const storieParent = getNthParent(video, 14);
     const replyContainer = storieParent?.nextSibling?.firstChild;
-    if(!replyContainer) return;
+    if (!replyContainer) return;
     replyContainer.style.background = "none";
     replyContainer.style.paddingBottom = "25px";
-    console.debug('[VideoControl] found parent container', replyContainer, 'for video', video)
-  }
-
-  /**
-   * Detaches video controls from a video element.
-   * @param {HTMLVideoElement} video - The video element to detach controls from
-   */
-  static detach(video) {
-    if (!video.dataset.reelsleekVideoControlAttached) return;
-
-    // Remove event listeners from video
-    const listeners = this.#videoListeners.get(video);
-    if (listeners) {
-      video.removeEventListener("timeupdate", listeners.timeupdate);
-      video.removeEventListener("play", listeners.play);
-      video.removeEventListener("pause", listeners.pause);
-
-      // Remove dblclick from presentationEl if it exists
-      if (listeners.presentationEl && listeners.dblclick) {
-        listeners.presentationEl.removeEventListener("dblclick", listeners.dblclick);
-      }
-
-      this.#videoListeners.delete(video);
-    }
-
-    // Remove seekbar container
-    video.parentElement.querySelector('.reelsleek-video-control')?.remove();
-
-    // Remove play container
-    video.parentElement.querySelector('.reelsleek-play-container')?.remove();
-
-    // Remove fullscreen button (custom toolbar) or standalone container (native mode)
-    video.parentElement.querySelector('.reelsleek-fullscreen-button')?.remove();
-    video.parentElement.querySelector('.reelsleek-fullscreen-container')?.remove();
-
-    // Clear marker
-    delete video.dataset.reelsleekVideoControlAttached;
   }
 
   /**
