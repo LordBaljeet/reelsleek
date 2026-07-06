@@ -1,0 +1,44 @@
+name: Release
+
+# Publishes a GitHub Release with a packaged extension zip whenever a
+# version tag (e.g. "v3.6.12") is pushed. This replaces committing zip
+# archives directly into the repository.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches manifest.json version
+        run: |
+          MANIFEST_VERSION=$(node -e "console.log(require('./manifest.json').version)")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$MANIFEST_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag v$TAG_VERSION does not match manifest.json version $MANIFEST_VERSION"
+            exit 1
+          fi
+
+      - name: Package extension
+        run: |
+          zip -r "${{ github.ref_name }}.zip" \
+            manifest.json \
+            background.js \
+            content \
+            icons \
+            permission \
+            popup
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "${{ github.ref_name }}.zip"
+          generate_release_notes: true
