@@ -1,5 +1,3 @@
-
-
 browser.runtime.onMessage.addListener((msg) => {
   switch (msg.type) {
     case "ping":
@@ -11,6 +9,7 @@ browser.runtime.onMessage.addListener((msg) => {
         audioControlAlwaysVisible: AudioControl.alwaysVisible,
         videoControlAlwaysVisible: VideoControl.alwaysVisible,
         toolbarMode: ToolbarMode.mode,
+        ambientModeEnabled: AmbientMode.enabled,
       });
 
     case "setOrientation":
@@ -22,11 +21,15 @@ browser.runtime.onMessage.addListener((msg) => {
       return Promise.resolve({ ok: true });
 
     case "setSeekbarAlwaysVisible":
-      VideoControl.setVisibility(msg.value)
+      VideoControl.setVisibility(msg.value);
       return Promise.resolve({ ok: true });
 
     case "setAutoscroll":
       AutoScroll.setAutoscrollEnabled(msg.value);
+      return Promise.resolve({ ok: true });
+
+    case "setAmbientMode":
+      AmbientMode.setEnabled(msg.value);
       return Promise.resolve({ ok: true });
 
     case "setTheaterMode":
@@ -36,12 +39,12 @@ browser.runtime.onMessage.addListener((msg) => {
     case "setToolbarMode": {
       ToolbarMode.setMode(msg.value);
       const videos = getCleanVideos();
-      videos.forEach(v => {
+      videos.forEach((v) => {
         AutoScroll.detach(v);
         TheaterMode.detach(v);
         VideoControl.detach(v);
         Rotate.detach(v);
-        v.parentElement.querySelector('.reelsleek-toolbar')?.remove();
+        v.parentElement.querySelector(".reelsleek-toolbar")?.remove();
         attachToolbar(v);
         VideoControl.attach(v);
         AutoScroll.attach(v);
@@ -53,19 +56,19 @@ browser.runtime.onMessage.addListener((msg) => {
 
     case "resetAll": {
       const videos = getCleanVideos();
-      videos.forEach(v => {
+      videos.forEach((v) => {
         AudioControl.detach(v);
         VideoControl.detach(v);
         TheaterMode.detach(v);
         AutoScroll.detach(v);
         Rotate.detach(v);
       });
-      videos.forEach(v => {
+      videos.forEach((v) => {
         AudioControl.attach(v);
         VideoControl.attach(v);
         AutoScroll.attach(v);
         TheaterMode.attach(v);
-        Rotate.attach(v); 
+        Rotate.attach(v);
       });
       return Promise.resolve({ ok: true });
     }

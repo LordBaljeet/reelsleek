@@ -1,22 +1,21 @@
-
 const handleHomePageVideo = (video) => {
   //if we are not on the home page, return
   if (window.location.pathname != "/") return;
 
   //fix clicking on video on home page redirecting to reels page.
-  const closestLink = video.closest('a');
+  const closestLink = video.closest("a");
   if (!closestLink || !closestLink.href.includes("reels/")) return;
 
-  closestLink.href = "javascript:void(0);"
+  closestLink.href = "javascript:void(0);";
   closestLink.draggable = false;
 
   //fix move author name and profile picture to the top of the video on home page.
   const authorContainer = closestLink.previousElementSibling;
   if (!authorContainer) return;
-  authorContainer.classList.add('reelsleek-homepage-author-container');
-  authorContainer.parentElement.style.background = 'none';
-  
-}
+  authorContainer.classList.add("reelsleek-homepage-author-container");
+  authorContainer.parentElement.style.background = "none";
+  AmbientMode.attach(video);
+};
 
 (async () => {
   await ToolbarMode.setup();
@@ -25,7 +24,8 @@ const handleHomePageVideo = (video) => {
   await AutoScroll.setup();
   await TheaterMode.setup();
   await Rotate.setup();
-  getCleanVideos().forEach(video => handleVideo(video));
+  await AmbientMode.setup();
+  getCleanVideos().forEach((video) => handleVideo(video));
 
   // Watch for dynamically added videos (Instagram is a SPA)
   const observer = new MutationObserver((mutations) => {
@@ -45,15 +45,20 @@ const handleHomePageVideo = (video) => {
   });
 
   function handleVideo(video) {
-    if (video.src && (!video.src.startsWith("blob") || video.src.includes("giphy.com"))) return;
+    if (
+      video.src &&
+      (!video.src.startsWith("blob") || video.src.includes("giphy.com"))
+    )
+      return;
     if (video.closest('[role="none')) return; // Skip gifs in embedded chats
-    if(!PageHandler.isStorie()) attachToolbar(video);
+    if (!PageHandler.isStorie()) attachToolbar(video);
     VideoControl.setCurrentlyPlayingVideo(video, true);
     AudioControl.attach(video);
     VideoControl.attach(video);
     AutoScroll.attach(video);
     TheaterMode.attach(video);
     Rotate.attach(video);
+    AmbientMode.attach(video);
 
     handleHomePageVideo(video);
   }

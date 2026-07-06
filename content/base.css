@@ -85,7 +85,8 @@
 
 /* ── Action buttons (fullscreen, theater, autoscroll) ── */
 
-.reelsleek-toolbar-container > button, .reelsleek-toolbar-container div > button {
+.reelsleek-toolbar-container>button,
+.reelsleek-toolbar-container div>button {
   opacity: 0.55;
   transition:
     opacity 0.2s ease,
@@ -107,7 +108,7 @@
 /* ── Visibility ── */
 
 /* Show on hover over the video container */
-div:has(> .reelsleek-toolbar):hover > .reelsleek-toolbar {
+div:has(> .reelsleek-toolbar):hover>.reelsleek-toolbar {
   opacity: 1;
   pointer-events: auto;
 }
@@ -126,8 +127,33 @@ div:has(> .reelsleek-toolbar):hover > .reelsleek-toolbar {
 .reelsleek-homepage-author-container {
   position: initial !important;
   background: none !important;
+
   * {
     color: rgb(var(--ig-primary-text)) !important;
   }
+}
+
+
+/*
+  ── Ambient Mode ──
+*/
+
+/* The video itself: show the full frame instead of a cropped "cover" fit */
+.reelsleek-ambient-fg {
+  object-fit: contain !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Blurred backdrop canvas filling the empty space left by object-fit: contain */
+.reelsleek-ambient-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  filter: blur(30px) saturate(1.4) brightness(0.6);
+  transform: scale(1.15);
+  pointer-events: none;
 }
 

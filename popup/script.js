@@ -8,7 +8,10 @@ class Messenger {
    * @returns {Promise<browser.tabs.Tab|null>} The active tab or null
    */
   static async getActiveTab() {
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
     return tab || null;
   }
 
@@ -112,6 +115,7 @@ class PopupController {
     this.orientToggle = document.getElementById("orientToggle");
     this.volumeVisToggle = document.getElementById("volumeVisToggle");
     this.seekbarVisToggle = document.getElementById("seekbarVisToggle");
+    this.ambientModeToggle = document.getElementById("ambientModeToggle");
     this.toolbarModeToggle = document.getElementById("toolbarModeToggle");
     this.reloadBtn = document.getElementById("reloadBtn");
 
@@ -135,20 +139,29 @@ class PopupController {
    */
   #attachEventListeners() {
     // Permission button
-    this.permBtn.addEventListener("click", () => this.#handlePermissionRequest());
+    this.permBtn.addEventListener("click", () =>
+      this.#handlePermissionRequest(),
+    );
 
     // Orientation toggle
     this.orientToggle.querySelectorAll(".orient-btn").forEach((btn) => {
-      btn.addEventListener("click", () => this.#handleOrientationChange(btn.dataset.orient));
+      btn.addEventListener("click", () =>
+        this.#handleOrientationChange(btn.dataset.orient),
+      );
     });
 
     // Visibility toggles
     this.#setupVisToggle(this.volumeVisToggle, "setVolumeAlwaysVisible");
     this.#setupVisToggle(this.seekbarVisToggle, "setSeekbarAlwaysVisible");
 
+    // Ambient mode toggle
+    this.#setupVisToggle(this.ambientModeToggle, "setAmbientMode", "on", "off");
+
     // Toolbar mode toggle
     this.toolbarModeToggle.querySelectorAll(".orient-btn").forEach((btn) => {
-      btn.addEventListener("click", () => this.#handleToolbarModeChange(btn.dataset.toolbarMode));
+      btn.addEventListener("click", () =>
+        this.#handleToolbarModeChange(btn.dataset.toolbarMode),
+      );
     });
 
     // Reload button
@@ -159,14 +172,21 @@ class PopupController {
    * Sets up a visibility toggle with its event listeners.
    * @param {HTMLElement} toggleEl - The toggle element
    * @param {string} messageType - The message type to send
+   * @param {string} [activeValue="always"] - The data-vis value considered "on"
+   * @param {string} [inactiveValue="hover"] - The data-vis value considered "off"
    * @private
    */
-  #setupVisToggle(toggleEl, messageType) {
+  #setupVisToggle(
+    toggleEl,
+    messageType,
+    activeValue = "always",
+    inactiveValue = "hover",
+  ) {
     toggleEl.querySelectorAll(".vis-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const alwaysVisible = btn.dataset.vis === "always";
-        this.#applyVisToggle(toggleEl, alwaysVisible);
-        await Messenger.sendToActiveTab(messageType, { value: alwaysVisible });
+        const isActive = btn.dataset.vis === activeValue;
+        this.#applyVisToggle(toggleEl, isActive, activeValue, inactiveValue);
+        await Messenger.sendToActiveTab(messageType, { value: isActive });
         this.showToast("saved", "ok");
       });
     });
@@ -219,8 +239,22 @@ class PopupController {
     this.orientToggle.className = "orient-toggle " + response.orient;
 
     // Update visibility toggles
-    this.#applyVisToggle(this.volumeVisToggle, response.audioControlAlwaysVisible);
-    this.#applyVisToggle(this.seekbarVisToggle, response.videoControlAlwaysVisible);
+    this.#applyVisToggle(
+      this.volumeVisToggle,
+      response.audioControlAlwaysVisible,
+    );
+    this.#applyVisToggle(
+      this.seekbarVisToggle,
+      response.videoControlAlwaysVisible,
+    );
+
+    // Update ambient mode toggle
+    this.#applyVisToggle(
+      this.ambientModeToggle,
+      response.ambientModeEnabled,
+      "on",
+      "off",
+    );
 
     // Update toolbar mode
     this.#applyToolbarModeToggle(response.toolbarMode ?? "custom");
@@ -260,12 +294,22 @@ class PopupController {
   /**
    * Applies the active state to a visibility toggle.
    * @param {HTMLElement} toggleEl - The toggle element
-   * @param {boolean} alwaysVisible - Whether the control should always be visible
+   * @param {boolean} isActive - Whether the "active" option should be selected
+   * @param {string} [activeValue="always"] - The data-vis value considered "on"
+   * @param {string} [inactiveValue="hover"] - The data-vis value considered "off"
    * @private
    */
-  #applyVisToggle(toggleEl, alwaysVisible) {
+  #applyVisToggle(
+    toggleEl,
+    isActive,
+    activeValue = "always",
+    inactiveValue = "hover",
+  ) {
     toggleEl.querySelectorAll(".vis-btn").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.vis === (alwaysVisible ? "always" : "hover"));
+      btn.classList.toggle(
+        "active",
+        btn.dataset.vis === (isActive ? activeValue : inactiveValue),
+      );
     });
   }
 
