@@ -44,12 +44,14 @@ browser.runtime.onMessage.addListener((msg) => {
         TheaterMode.detach(v);
         VideoControl.detach(v);
         Rotate.detach(v);
+        Download.detach(v);
         v.parentElement.querySelector(".reelsleek-toolbar")?.remove();
         attachToolbar(v);
         VideoControl.attach(v);
         AutoScroll.attach(v);
         TheaterMode.attach(v);
         Rotate.attach(v);
+        Download.attach(v);
       });
       return Promise.resolve({ ok: true });
     }
@@ -62,6 +64,7 @@ browser.runtime.onMessage.addListener((msg) => {
         TheaterMode.detach(v);
         AutoScroll.detach(v);
         Rotate.detach(v);
+        Download.detach(v);
       });
       videos.forEach((v) => {
         AudioControl.attach(v);
@@ -69,6 +72,7 @@ browser.runtime.onMessage.addListener((msg) => {
         AutoScroll.attach(v);
         TheaterMode.attach(v);
         Rotate.attach(v);
+        Download.attach(v);
       });
       return Promise.resolve({ ok: true });
     }

@@ -25,6 +25,8 @@ const handleHomePageVideo = (video) => {
   await TheaterMode.setup();
   await Rotate.setup();
   await AmbientMode.setup();
+  await Download.setup();
+  MediaResolver.setup();
   getCleanVideos().forEach((video) => handleVideo(video));
 
   // Watch for dynamically added videos (Instagram is a SPA)
@@ -59,6 +61,7 @@ const handleHomePageVideo = (video) => {
     TheaterMode.attach(video);
     Rotate.attach(video);
     AmbientMode.attach(video);
+    Download.attach(video);
 
     handleHomePageVideo(video);
   }

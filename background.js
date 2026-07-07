@@ -1,4 +1,4 @@
-if (typeof globalThis.browser === 'undefined') {
+if (typeof globalThis.browser === "undefined") {
   globalThis.browser = chrome;
 }
 
@@ -14,13 +14,28 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
   const granted = await hasPermission();
   if (!granted) {
     // Open a dedicated permission-request tab
-    browser.tabs.create({ url: browser.runtime.getURL("permission/index.html") });
+    browser.tabs.create({
+      url: browser.runtime.getURL("permission/index.html"),
+    });
   }
 });
 
-// Listen for messages from the popup or permission page
+async function downloadMedia(url, filename) {
+  try {
+    await browser.downloads.download({ url, filename, saveAs: false });
+    return { ok: true };
+  } catch (err) {
+    console.error("[background] Failed to download media:", err);
+    return { ok: false, error: err?.message ?? String(err) };
+  }
+}
+
+// Listen for messages from the popup, permission page, or content scripts
 browser.runtime.onMessage.addListener((msg) => {
   if (msg.type === "checkPermission") {
     return hasPermission();
+  }
+  if (msg.type === "downloadMedia") {
+    return downloadMedia(msg.url, msg.filename);
   }
 });

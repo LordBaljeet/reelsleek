@@ -1,11 +1,10 @@
-
 /**
  * Subscribes to events and executes actions when events are published.
  * Uses WeakRef to prevent memory leaks by allowing garbage collection of elements.
  */
 class EventSubscriber {
   #element;
-  #actions = new Map()
+  #actions = new Map();
 
   /**
    * Creates an event subscriber for an element.
@@ -40,7 +39,6 @@ class EventSubscriber {
   unsubscribe(event) {
     this.#actions.delete(event);
   }
-
 }
 
 /**
@@ -48,7 +46,7 @@ class EventSubscriber {
  * Implements a simple pub-sub pattern for event handling.
  */
 class EventPublisher {
-  #subscribers = new Set()
+  #subscribers = new Set();
 
   /**
    * Adds a subscriber to receive event notifications.
@@ -71,7 +69,7 @@ class EventPublisher {
    * @param {string} event - The event type to publish
    */
   publish(event, ...args) {
-    this.#subscribers.forEach(sub => sub.update(event, ...args));
+    this.#subscribers.forEach((sub) => sub.update(event, ...args));
   }
 }
 
@@ -81,9 +79,9 @@ class EventPublisher {
  * @returns {HTMLVideoElement[]} Array of filtered video elements
  */
 function getCleanVideos() {
-  return [...document.querySelectorAll('video')].filter(v =>
-    !v.src || v.src.startsWith("blob")
-  )
+  return [...document.querySelectorAll("video")].filter(
+    (v) => !v.src || v.src.startsWith("blob"),
+  );
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -94,7 +92,8 @@ const SVG_NS = "http://www.w3.org/2000/svg";
  * @param {string} html - The HTML string to parse and append
  */
 function appendParsedHTML(container, html) {
-  const nodes = new DOMParser().parseFromString(html, "text/html").body.childNodes;
+  const nodes = new DOMParser().parseFromString(html, "text/html").body
+    .childNodes;
   for (const child of nodes) {
     container.appendChild(document.adoptNode(child));
   }
@@ -107,9 +106,10 @@ function appendParsedHTML(container, html) {
  */
 function isInput() {
   const { tagName, type, isContentEditable } = document.activeElement ?? {};
-  console.debug('[ensureNotInput]', tagName, type, isContentEditable)
+  console.debug("[ensureNotInput]", tagName, type, isContentEditable);
   // Ignore text input fields
-  if (tagName === "INPUT" && (type === "text" || type === "search")) return true;
+  if (tagName === "INPUT" && (type === "text" || type === "search"))
+    return true;
   if (tagName === "TEXTAREA" || isContentEditable) return true;
   return false;
 }
@@ -145,9 +145,13 @@ class ToolbarMode {
 
   static #StorageKey = "reelsleek-toolbar-mode";
 
-  static get mode() { return this.#mode; }
+  static get mode() {
+    return this.#mode;
+  }
 
-  static isCustom() { return this.#mode === "custom"; }
+  static isCustom() {
+    return this.#mode === "custom";
+  }
 
   static async setup() {
     const result = await browser.storage.local.get([this.#StorageKey]);
@@ -162,15 +166,18 @@ class ToolbarMode {
   }
 
   static #applyBodyClass() {
-    document.body.classList.toggle("reelsleek-custom-toolbar", this.#mode === "custom");
+    document.body.classList.toggle(
+      "reelsleek-custom-toolbar",
+      this.#mode === "custom",
+    );
   }
 }
 
 function attachToolbar(video) {
   if (!ToolbarMode.isCustom()) return;
-  if (video.parentElement.querySelector('.reelsleek-toolbar')) return;
+  if (video.parentElement.querySelector(".reelsleek-toolbar")) return;
 
-  const logoUrl = browser.runtime.getURL('icons/logo-no-bg.png');
+  const logoUrl = browser.runtime.getURL("icons/logo-no-bg.png");
   const html = `
     <button class="reelsleek-toolbar-toggle" aria-label="ReelSleek Controls" title="ReelSleek Controls">
       <img class="reelsleek-toolbar-logo" src="${logoUrl}" alt="ReelSleek">
@@ -196,47 +203,57 @@ function addKeybind(key, action) {
 }
 
 class PageHandler {
-    
-    static #videoType = {
-        STORIE: 'storie',
-        REEL: 'reel',
-        POST: 'post',
-        FEED: 'feed',
-        MESSAGE: 'message',
-    }
+  static #videoType = {
+    STORIE: "storie",
+    REEL: "reel",
+    POST: "post",
+    FEED: "feed",
+    MESSAGE: "message",
+  };
 
-    static getVideoType() {
-        const pathname = window.location.pathname;
-        if (pathname.includes('/stories/')) {
-            return this.#videoType.STORIE;
-        } else if (pathname.includes('/reels/')) {
-            return this.#videoType.REEL;
-        } else if (pathname.includes('/p/')) {
-            return this.#videoType.POST;
-        } else if (pathname.includes('/direct/')) {
-            return this.#videoType.MESSAGE;
-        }
-        return this.#videoType.FEED;
+  static getVideoType() {
+    const pathname = window.location.pathname;
+    if (pathname.includes("/stories/")) {
+      return this.#videoType.STORIE;
+    } else if (pathname.includes("/reels/")) {
+      return this.#videoType.REEL;
+    } else if (pathname.includes("/p/")) {
+      return this.#videoType.POST;
+    } else if (pathname.includes("/direct/")) {
+      return this.#videoType.MESSAGE;
     }
+    return this.#videoType.FEED;
+  }
 
-    static isStorie() {
-        return this.getVideoType() == this.#videoType.STORIE;
-    }
+  static isStorie() {
+    return this.getVideoType() == this.#videoType.STORIE;
+  }
 
-    static isReel() {
-        return this.getVideoType() == this.#videoType.REEL;
-    }
+  static isReel() {
+    return this.getVideoType() == this.#videoType.REEL;
+  }
 
-    static isPost() {
-        return this.getVideoType() == this.#videoType.POST;
-    }
+  static isPost() {
+    return this.getVideoType() == this.#videoType.POST;
+  }
 
-    static isFeed() {
-        return this.getVideoType() == this.#videoType.FEED;
-    }
+  static isFeed() {
+    return this.getVideoType() == this.#videoType.FEED;
+  }
 
-    static isMessage() {
-        return this.getVideoType() == this.#videoType.MESSAGE;
-    }
+  static isMessage() {
+    return this.getVideoType() == this.#videoType.MESSAGE;
+  }
 
+  /**
+   * Extracts the shortcode/id segment from a reel or post URL, e.g.
+   * "/reel/ABC123/" or "/p/ABC123/" -> "ABC123".
+   * @returns {string|null} The shortcode, or null if the current page has none
+   */
+  static getShortcode() {
+    const match = window.location.pathname.match(
+      /\/(?:reel|reels|p|tv)\/([^/]+)/,
+    );
+    return match ? match[1] : null;
+  }
 }

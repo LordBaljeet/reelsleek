@@ -102,7 +102,7 @@
         }
 
         /* Show on parent hover */
-        div:has(.reelsleek-video-control):hover>.reelsleek-video-control {
+        div:has(.reelsleek-video-control):hover > .reelsleek-video-control {
             opacity: 1;
         }
 
@@ -152,7 +152,14 @@
     </style>
     <div class="reelsleek-seekbar-track"></div>
     <div class="reelsleek-seekbar-fill"></div>
-    <input type="range" class="reelsleek-seekbar" min="0" max="100" step="any" aria-label="Seek">
+    <input
+        type="range"
+        class="reelsleek-seekbar"
+        min="0"
+        max="100"
+        step="any"
+        aria-label="Seek"
+    />
     <div class="reelsleek-seekbar-tooltip">0:00</div>
 </template>
 
@@ -174,7 +181,8 @@
             transition: var(--transition-opacity);
         }
 
-        div:has(.reelsleek-fullscreen-container):hover>.reelsleek-fullscreen-container {
+        div:has(.reelsleek-fullscreen-container):hover
+            > .reelsleek-fullscreen-container {
             opacity: 1;
             pointer-events: auto;
         }
@@ -200,7 +208,7 @@
         div:has(> div > video):fullscreen {
             padding: 10px 0;
 
-            >div {
+            > div {
                 width: fit-content;
                 position: relative;
                 margin: auto;
@@ -224,16 +232,30 @@
             }
         }
     </style>
-    <button class="reelsleek-fullscreen-button" aria-label="Toggle fullscreen" title="Toggle fullscreen (F)">
-        <svg class="reelsleek-expand-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"
-            fill="currentColor">
+    <button
+        class="reelsleek-fullscreen-button"
+        aria-label="Toggle fullscreen"
+        title="Toggle fullscreen (F)"
+    >
+        <svg
+            class="reelsleek-expand-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 -960 960 960"
+            fill="currentColor"
+        >
             <path
-                d="M280-280h120q17 0 28.5 11.5T440-240q0 17-11.5 28.5T400-200H240q-17 0-28.5-11.5T200-240v-160q0-17 11.5-28.5T240-440q17 0 28.5 11.5T280-400v120Zm400-400H560q-17 0-28.5-11.5T520-720q0-17 11.5-28.5T560-760h160q17 0 28.5 11.5T760-720v160q0 17-11.5 28.5T720-520q-17 0-28.5-11.5T680-560v-120Z" />
+                d="M280-280h120q17 0 28.5 11.5T440-240q0 17-11.5 28.5T400-200H240q-17 0-28.5-11.5T200-240v-160q0-17 11.5-28.5T240-440q17 0 28.5 11.5T280-400v120Zm400-400H560q-17 0-28.5-11.5T520-720q0-17 11.5-28.5T560-760h160q17 0 28.5 11.5T760-720v160q0 17-11.5 28.5T720-520q-17 0-28.5-11.5T680-560v-120Z"
+            />
         </svg>
-        <svg class="reelsleek-collapse-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"
-            fill="currentColor">
+        <svg
+            class="reelsleek-collapse-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 -960 960 960"
+            fill="currentColor"
+        >
             <path
-                d="M360-360H240q-17 0-28.5-11.5T200-400q0-17 11.5-28.5T240-440h160q17 0 28.5 11.5T440-400v160q0 17-11.5 28.5T400-200q-17 0-28.5-11.5T360-240v-120Zm240-240h120q17 0 28.5 11.5T760-560q0 17-11.5 28.5T720-520H560q-17 0-28.5-11.5T520-560v-160q0-17 11.5-28.5T560-760q17 0 28.5 11.5T600-720v120Z" />
+                d="M360-360H240q-17 0-28.5-11.5T200-400q0-17 11.5-28.5T240-440h160q17 0 28.5 11.5T440-400v160q0 17-11.5 28.5T400-200q-17 0-28.5-11.5T360-240v-120Zm240-240h120q17 0 28.5 11.5T760-560q0 17-11.5 28.5T720-520H560q-17 0-28.5-11.5T520-560v-160q0-17 11.5-28.5T560-760q17 0 28.5 11.5T600-720v120Z"
+            />
         </svg>
     </button>
 </template>
@@ -266,13 +288,25 @@
             color: #fff;
         }
 
-        .reelsleek-play-container[data-show-paused="true"] .reelsleek-play-button {
+        .reelsleek-play-container[data-show-paused="true"]
+            .reelsleek-play-button {
             display: inherit;
         }
     </style>
-    <button class="reelsleek-play-button" aria-label="Toggle play/pause" title="Toggle play/pause (P)">
-        <svg class="reelsleek-play-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+    <button
+        class="reelsleek-play-button"
+        aria-label="Toggle play/pause"
+        title="Toggle play/pause (P)"
+    >
+        <svg
+            class="reelsleek-play-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+        >
+            <path
+                d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"
+            />
         </svg>
     </button>
 </template>
@@ -306,14 +340,18 @@
             height: 24px;
         }
 
-        body:not(.reelsleek-custom-toolbar) .reelsleek-theater-mode[aria-pressed="true"] {
+        body:not(.reelsleek-custom-toolbar)
+            .reelsleek-theater-mode[aria-pressed="true"] {
             opacity: 1;
         }
 
         /* Theater mode active layouts: hide target sidebar elements */
         body.theater-mode-active div[role="tablist"],
-        body.theater-mode-active div[tabindex="-1"]:has(div > div > div > [data-visualcompletion="ignore-dynamic"]),
-        body.theater-mode-active div[class=""]>div>div.html-div {
+        body.theater-mode-active
+            div[tabindex="-1"]:has(
+                div > div > div > [data-visualcompletion="ignore-dynamic"]
+            ),
+        body.theater-mode-active div[class=""] > div > div.html-div {
             display: none;
         }
 
@@ -325,12 +363,26 @@
             z-index: 2147483647;
         }
     </style>
-    <button class="reelsleek-theater-mode" aria-label="Toggle theater mode" title="Toggle theater mode (T)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <button
+        class="reelsleek-theater-mode"
+        aria-label="Toggle theater mode"
+        title="Toggle theater mode (T)"
+    >
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+        >
             <g fill="none" stroke="currentColor" stroke-width="1.5">
                 <path
-                    d="M6 8c0-2.828 0-4.243.879-5.121C7.757 2 9.172 2 12 2s4.243 0 5.121.879C18 3.757 18 5.172 18 8v8c0 2.828 0 4.243-.879 5.121C16.243 22 14.828 22 12 22s-4.243 0-5.121-.879C6 20.243 6 18.828 6 16z" />
-                <path stroke-linecap="round" d="M21 4.5v15M3 4.5v15" opacity="0.5" />
+                    d="M6 8c0-2.828 0-4.243.879-5.121C7.757 2 9.172 2 12 2s4.243 0 5.121.879C18 3.757 18 5.172 18 8v8c0 2.828 0 4.243-.879 5.121C16.243 22 14.828 22 12 22s-4.243 0-5.121-.879C6 20.243 6 18.828 6 16z"
+                />
+                <path
+                    stroke-linecap="round"
+                    d="M21 4.5v15M3 4.5v15"
+                    opacity="0.5"
+                />
             </g>
         </svg>
     </button>
@@ -365,7 +417,8 @@
             transform: scale(0.88);
         }
 
-        body:not(.reelsleek-custom-toolbar) .reelsleek-rotate[aria-pressed="true"] {
+        body:not(.reelsleek-custom-toolbar)
+            .reelsleek-rotate[aria-pressed="true"] {
             opacity: 1;
         }
 
@@ -402,7 +455,10 @@
             flex-direction: row;
             gap: 4px;
             z-index: 2000;
-            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+            transition:
+                opacity 0.2s ease,
+                transform 0.2s ease,
+                visibility 0.2s;
         }
 
         /* Adjust spatial placement offsets inside native layout parameters */
@@ -418,7 +474,7 @@
 
         /* Invisible cursor tracking bridge layout item */
         .reelsleek-rotate-flyout::after {
-            content: '';
+            content: "";
             position: absolute;
             right: -24px;
             top: 0;
@@ -436,7 +492,9 @@
             align-items: center !important;
             justify-content: center !important;
             border-radius: 50% !important;
-            transition: background-color 0.2s, opacity 0.2s !important;
+            transition:
+                background-color 0.2s,
+                opacity 0.2s !important;
         }
 
         .reelsleek-rotate-flyout .reelsleek-rotate:hover {
@@ -451,37 +509,112 @@
     </style>
 
     <div class="reelsleek-rotate-container">
-        <button class="reelsleek-rotate reelsleek-rotate-main" aria-label="Reset Rotation" title="Reset Rotation (H)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 256 256">
-                <path fill="currentColor"
-                    d="m205.66 221.66l-24 24a8 8 0 0 1-11.32-11.32L180.69 224H80a24 24 0 0 1-24-24v-96a8 8 0 0 1 16 0v96a8 8 0 0 0 8 8h100.69l-10.35-10.34a8 8 0 0 1 11.32-11.32l24 24a8 8 0 0 1 0 11.32M80 72a8 8 0 0 0 5.66-13.66L75.31 48H176a8 8 0 0 1 8 8v96a8 8 0 0 0 16 0V56a24 24 0 0 0-24-24H75.31l10.35-10.34a8 8 0 1 0-11.32-11.32l-24 24a8 8 0 0 0 0 11.32l24 24A8 8 0 0 0 80 72" />
+        <button
+            class="reelsleek-rotate reelsleek-rotate-main"
+            aria-label="Reset Rotation"
+            title="Reset Rotation (H)"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 256 256"
+            >
+                <path
+                    fill="currentColor"
+                    d="m205.66 221.66l-24 24a8 8 0 0 1-11.32-11.32L180.69 224H80a24 24 0 0 1-24-24v-96a8 8 0 0 1 16 0v96a8 8 0 0 0 8 8h100.69l-10.35-10.34a8 8 0 0 1 11.32-11.32l24 24a8 8 0 0 1 0 11.32M80 72a8 8 0 0 0 5.66-13.66L75.31 48H176a8 8 0 0 1 8 8v96a8 8 0 0 0 16 0V56a24 24 0 0 0-24-24H75.31l10.35-10.34a8 8 0 1 0-11.32-11.32l-24 24a8 8 0 0 0 0 11.32l24 24A8 8 0 0 0 80 72"
+                />
             </svg>
         </button>
         <div class="reelsleek-rotate-flyout">
-            <button class="reelsleek-rotate reelsleek-rotate-left" aria-label="Rotate left" title="Rotate left (J)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="2">
-                        <path stroke-dasharray="14" stroke-dashoffset="14" d="M12 6c-3.31 0-6 2.69-6 6v2.5">
-                            <animate fill="freeze" attributeName="stroke-dashoffset" dur="0.2s" values="14;0" />
+            <button
+                class="reelsleek-rotate reelsleek-rotate-left"
+                aria-label="Rotate left"
+                title="Rotate left (J)"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                >
+                    <g
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-dasharray="14"
+                            stroke-dashoffset="14"
+                            d="M12 6c-3.31 0-6 2.69-6 6v2.5"
+                        >
+                            <animate
+                                fill="freeze"
+                                attributeName="stroke-dashoffset"
+                                dur="0.2s"
+                                values="14;0"
+                            />
                         </path>
-                        <path stroke-dasharray="6" stroke-dashoffset="6" d="M6 15l-3 -3M6 15l3 -3">
-                            <animate fill="freeze" attributeName="stroke-dashoffset" begin="0.2s" dur="0.2s"
-                                values="6;0" />
+                        <path
+                            stroke-dasharray="6"
+                            stroke-dashoffset="6"
+                            d="M6 15l-3 -3M6 15l3 -3"
+                        >
+                            <animate
+                                fill="freeze"
+                                attributeName="stroke-dashoffset"
+                                begin="0.2s"
+                                dur="0.2s"
+                                values="6;0"
+                            />
                         </path>
                     </g>
                 </svg>
             </button>
-            <button class="reelsleek-rotate reelsleek-rotate-right" aria-label="Rotate right" title="Rotate right (K)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                        stroke-width="2">
-                        <path stroke-dasharray="14" stroke-dashoffset="14" d="M12 6c3.31 0 6 2.69 6 6v2.5">
-                            <animate fill="freeze" attributeName="stroke-dashoffset" dur="0.2s" values="14;0" />
+            <button
+                class="reelsleek-rotate reelsleek-rotate-right"
+                aria-label="Rotate right"
+                title="Rotate right (K)"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                >
+                    <g
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-dasharray="14"
+                            stroke-dashoffset="14"
+                            d="M12 6c3.31 0 6 2.69 6 6v2.5"
+                        >
+                            <animate
+                                fill="freeze"
+                                attributeName="stroke-dashoffset"
+                                dur="0.2s"
+                                values="14;0"
+                            />
                         </path>
-                        <path stroke-dasharray="6" stroke-dashoffset="6" d="M18 15l3 -3M18 15l-3 -3">
-                            <animate fill="freeze" attributeName="stroke-dashoffset" begin="0.2s" dur="0.2s"
-                                values="6;0" />
+                        <path
+                            stroke-dasharray="6"
+                            stroke-dashoffset="6"
+                            d="M18 15l3 -3M18 15l-3 -3"
+                        >
+                            <animate
+                                fill="freeze"
+                                attributeName="stroke-dashoffset"
+                                begin="0.2s"
+                                dur="0.2s"
+                                values="6;0"
+                            />
                         </path>
                     </g>
                 </svg>
@@ -519,7 +652,8 @@
             transform: scale(0.88);
         }
 
-        body:not(.reelsleek-custom-toolbar) .reelsleek-autoscroll[aria-pressed="true"] {
+        body:not(.reelsleek-custom-toolbar)
+            .reelsleek-autoscroll[aria-pressed="true"] {
             opacity: 1;
         }
 
@@ -530,10 +664,102 @@
             height: 24px;
         }
     </style>
-    <button class="reelsleek-autoscroll" aria-label="Toggle autoscroll" title="Toggle autoscroll (A)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M6.416 14.5V11m0 0V4.75a1.75 1.75 0 1 1 3.5 0V10l3.077.478c1.929.289 2.893.434 3.572.84c1.122.673 1.935 1.682 1.935 3.156c0 1.026-.254 1.715-.87 3.565c-.392 1.174-.587 1.76-.906 2.225a4 4 0 0 1-2.193 1.58c-.541.156-1.16.156-2.397.156h-1.405c-1.785 0-2.677 0-3.443-.335a4 4 0 0 1-.96-.593c-.642-.535-1.04-1.333-1.839-2.93c-.647-1.294-.97-1.94-.986-2.612a3 3 0 0 1 .115-.895c.184-.646.66-1.19 1.614-2.28zM18 2v6m0-6c-.7 0-2.008 1.994-2.5 2.5M18 2c.7 0 2.009 1.994 2.5 2.5" />
+    <button
+        class="reelsleek-autoscroll"
+        aria-label="Toggle autoscroll"
+        title="Toggle autoscroll (A)"
+    >
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+        >
+            <path
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M6.416 14.5V11m0 0V4.75a1.75 1.75 0 1 1 3.5 0V10l3.077.478c1.929.289 2.893.434 3.572.84c1.122.673 1.935 1.682 1.935 3.156c0 1.026-.254 1.715-.87 3.565c-.392 1.174-.587 1.76-.906 2.225a4 4 0 0 1-2.193 1.58c-.541.156-1.16.156-2.397.156h-1.405c-1.785 0-2.677 0-3.443-.335a4 4 0 0 1-.96-.593c-.642-.535-1.04-1.333-1.839-2.93c-.647-1.294-.97-1.94-.986-2.612a3 3 0 0 1 .115-.895c.184-.646.66-1.19 1.614-2.28zM18 2v6m0-6c-.7 0-2.008 1.994-2.5 2.5M18 2c.7 0 2.009 1.994 2.5 2.5"
+            />
+        </svg>
+    </button>
+</template>
+
+<!-- ── DOWNLOAD COMPONENT ── -->
+<template id="reelsleek-download-template">
+    <style>
+        .reelsleek-download svg {
+            display: block;
+            flex-shrink: 0;
+        }
+
+        .reelsleek-download[data-state="loading"] {
+            opacity: 0.35 !important;
+            pointer-events: none;
+        }
+
+        .reelsleek-download[data-state="error"] svg {
+            stroke: #ff5c5c;
+        }
+
+        .reelsleek-download[data-state="done"] svg {
+            stroke: #4caf50;
+        }
+
+        /* Native Instagram toolbar mode */
+        body:not(.reelsleek-custom-toolbar) .reelsleek-download {
+            all: unset;
+            margin-bottom: 20px;
+            color: rgb(var(--ig-primary-icon));
+            cursor: pointer;
+            opacity: 0.85;
+            transition:
+                opacity 0.2s ease,
+                transform 0.1s ease;
+        }
+
+        body:not(.reelsleek-custom-toolbar) .reelsleek-download:hover {
+            opacity: 1;
+        }
+
+        body:not(.reelsleek-custom-toolbar) .reelsleek-download:active {
+            transform: scale(0.88);
+        }
+
+        body:not(.reelsleek-custom-toolbar)
+            .reelsleek-download[data-state="loading"] {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        body:not(.reelsleek-custom-toolbar) .reelsleek-download svg {
+            display: block;
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+    <button
+        class="reelsleek-download"
+        aria-label="Download video"
+        title="Download video"
+    >
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+        >
+            <path
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4.5 19.5h15"
+            />
         </svg>
     </button>
 </template>
@@ -555,7 +781,7 @@
             transition: var(--transition-opacity);
         }
 
-        div:has(.reelsleek-audio-control):hover>.reelsleek-audio-control {
+        div:has(.reelsleek-audio-control):hover > .reelsleek-audio-control {
             opacity: 1;
             pointer-events: auto;
         }
@@ -612,7 +838,11 @@
                 width: 10px;
                 writing-mode: vertical-lr;
                 direction: rtl;
-                background: linear-gradient(to top, #fff var(--slider-fill, 10%), #d3d3d3 var(--slider-fill, 10%));
+                background: linear-gradient(
+                    to top,
+                    #fff var(--slider-fill, 10%),
+                    #d3d3d3 var(--slider-fill, 10%)
+                );
             }
         }
 
@@ -621,7 +851,11 @@
             appearance: none;
             -webkit-appearance: none;
             border-radius: 5px;
-            background: linear-gradient(to right, #fff var(--slider-fill, 10%), #d3d3d3 var(--slider-fill, 10%));
+            background: linear-gradient(
+                to right,
+                #fff var(--slider-fill, 10%),
+                #d3d3d3 var(--slider-fill, 10%)
+            );
         }
 
         .reelsleek-volume-slider::-webkit-slider-runnable-track {
@@ -695,29 +929,60 @@
 
         /* Remove Native Platform Media Elements */
         div[data-instancekey],
-        div:has(> .reelsleek-audio-control) div[role="group"] div>div[role="button"]:has(> svg),
-        div:has(> .reelsleek-audio-control) div[role="group"] div.html-div>button:has(> div > svg) {
+        div:has(> .reelsleek-audio-control)
+            div[role="group"]
+            div
+            > div[role="button"]:has(> svg),
+        div:has(> .reelsleek-audio-control)
+            div[role="group"]
+            div.html-div
+            > button:has(> div > svg) {
             display: none;
         }
     </style>
     <button class="reelsleek-mute-button" aria-label="Toggle mute">
-        <svg class="reelsleek-volume-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path class="reelsleek-vi-speaker"
+        <svg
+            class="reelsleek-volume-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <path
+                class="reelsleek-vi-speaker"
                 d="M2.003 11.716C2.04 9.873 2.059 8.952 2.671 8.164 C2.783 8.02 2.947 7.849 3.084 7.733 C3.836 7.097 4.83 7.097 6.817 7.097 C7.527 7.097 7.882 7.097 8.22 7.005 C8.291 6.985 8.36 6.963 8.429 6.938 C8.759 6.817 9.056 6.608 9.649 6.192 L14.138 4.082 C14.326 4.151 14.508 4.25 14.671 4.372 C15.519 5.007 15.584 6.487 15.713 9.445 C15.761 10.541 15.793 11.479 15.793 12 C15.793 12.522 15.761 13.459 15.713 14.555 C15.584 17.513 15.519 18.993 14.671 19.628 C14.508 19.75 14.326 19.849 14.138 19.918 L9.649 17.808 C9.056 17.392 8.759 17.183 8.429 17.062 C8.36 17.037 8.291 17.015 8.22 16.996 C7.882 16.903 7.527 16.903 6.817 16.903 C4.83 16.903 3.836 16.903 3.084 16.267 C2.947 16.151 2.783 15.98 2.671 15.836 C2.059 15.048 2.04 14.127 2.003 12.285 C2.001 12.188 2 12.093 2 12 C2 11.907 2.001 11.812 2.003 11.716Z"
-                fill="#fff" />
+                fill="#fff"
+            />
             <g class="reelsleek-vi-waves">
-                <path opacity="0.5"
+                <path
+                    opacity="0.5"
                     d="M19.489 5.552C19.782 5.292 20.217 5.334 20.461 5.646 C21.2 6.6 21.639 8.082 21.9 9.85 C22 10.541 22 11.279 22 12 C22 12.721 22 13.459 21.9 14.15 C21.639 15.918 21.2 17.4 20.461 18.354 C20.217 18.666 19.782 18.708 19.489 18.448 C19.198 18.19 19.158 17.729 19.398 17.417 C19.96 16.68 20.337 15.419 20.565 13.795 C20.655 13.161 20.655 10.839 20.565 10.205 C20.337 8.581 19.96 7.32 19.398 6.583 C19.158 6.271 19.198 5.81 19.489 5.552Z"
-                    fill="#fff" />
-                <path opacity="0.8"
+                    fill="#fff"
+                />
+                <path
+                    opacity="0.8"
                     d="M17.757 8.416C18.09 8.219 18.51 8.347 18.695 8.702 C19.07 9.415 19.241 10.545 19.241 12 C19.241 13.455 19.07 14.585 18.695 15.298 C18.51 15.653 18.09 15.781 17.757 15.585 C17.427 15.389 17.306 14.947 17.485 14.594 C17.754 14.065 17.862 13.127 17.862 12 C17.862 10.873 17.754 9.935 17.485 9.406 C17.306 9.053 17.427 8.611 17.757 8.416Z"
-                    fill="#fff" />
+                    fill="#fff"
+                />
             </g>
-            <line class="reelsleek-vi-slash" x1="20.5" y1="3.5" x2="3.5" y2="20.5" stroke="#fff" stroke-width="1.8"
-                stroke-linecap="round" />
+            <line
+                class="reelsleek-vi-slash"
+                x1="20.5"
+                y1="3.5"
+                x2="3.5"
+                y2="20.5"
+                stroke="#fff"
+                stroke-width="1.8"
+                stroke-linecap="round"
+            />
         </svg>
     </button>
     <div class="reelsleek-slider-container">
-        <input type="range" class="reelsleek-volume-slider" min="0" max="100" aria-label="Volume">
+        <input
+            type="range"
+            class="reelsleek-volume-slider"
+            min="0"
+            max="100"
+            aria-label="Volume"
+        />
     </div>
 </template>
