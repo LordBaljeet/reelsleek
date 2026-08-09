@@ -11,6 +11,7 @@ class DownloadModule {
     if (!templateElement) return;
 
     const clone = document.importNode(templateElement.content, true);
+    Keybinds.applyTitles(clone);
     this.button = clone.querySelector(".reelsleek-download");
     if (!this.button) return;
 
@@ -49,7 +50,7 @@ class DownloadModule {
 
   #handleClick = async (e) => {
     e.stopPropagation();
-    if (this.button.dataset.state === "loading") return;
+    if (["loading", "ready"].includes(this.button.dataset.state)) return;
 
     this.#setState("loading");
     try {
@@ -57,6 +58,11 @@ class DownloadModule {
       if (!url) throw new Error("No downloadable video found");
 
       const filename = Download.buildFilename(this.video);
+
+      // Play the "filling up" ready animation, then kick off the actual
+      // download once the button reaches full opacity.
+      await this.#playReadyAnimation();
+
       const response = await browser.runtime.sendMessage({
         type: "downloadMedia",
         url,
@@ -73,6 +79,18 @@ class DownloadModule {
     }
   };
 
+  /**
+   * Plays the top-to-bottom fill animation and resolves once the button
+   * has reached full opacity, right before the download is triggered.
+   * @returns {Promise<void>}
+   */
+  #playReadyAnimation() {
+    return new Promise((resolve) => {
+      this.#setState("ready");
+      setTimeout(resolve, Download.READY_ANIMATION_MS);
+    });
+  }
+
   #setState(state) {
     if (this.button) this.button.dataset.state = state;
   }
@@ -88,6 +106,10 @@ class DownloadModule {
  * Attaches a download button to each video element.
  */
 class Download {
+  /** Duration (ms) of the top-to-bottom "ready" fill animation, kept in
+   * sync with the CSS transition on .reelsleek-download[data-state="ready"]. */
+  static READY_ANIMATION_MS = 420;
+
   /** @type {HTMLTemplateElement|null} */
   static #template = null;
 
@@ -96,6 +118,45 @@ class Download {
 
   /** @type {WeakSet<HTMLVideoElement>} */
   static #attaching = new WeakSet();
+
+  /** @type {boolean} Whether the download feature is present/usable at all */
+  static featureEnabled = true;
+
+  static #StorageKey = "reelsleek-download-feature-enabled";
+
+  /**
+   * Enables or disables the download feature itself (present/usable).
+   * Persists the choice and applies it immediately across the page.
+   * @param {boolean} enabled
+   */
+  static setFeatureEnabled(enabled) {
+    Download.featureEnabled = enabled;
+    browser.storage.local.set({ [Download.#StorageKey]: enabled });
+
+    if (enabled) {
+      FeatureOrder.reattachAll();
+    } else {
+      getCleanVideos().forEach((video) => Download.detach(video));
+    }
+  }
+
+  static #attachKeybinds() {
+    registerKeybind("download", "KeyD", "Download video", "Actions", () => {
+      if (!Download.featureEnabled) return;
+      if (PageHandler.isStorie()) return;
+      Download.triggerDownload(VideoControl.currentlyPlayingVideo);
+    });
+  }
+
+  /**
+   * Triggers the download for a given video, as if its button was clicked.
+   * @param {HTMLVideoElement|null} video
+   */
+  static triggerDownload(video) {
+    if (!video) return;
+    const instance = Download.#videoInstances.get(video);
+    instance?.button?.click();
+  }
 
   static async #loadExternalTemplates() {
     try {
@@ -114,7 +175,11 @@ class Download {
   }
 
   static async setup() {
+    const result = await browser.storage.local.get([Download.#StorageKey]);
+    Download.featureEnabled = result[Download.#StorageKey] ?? Download.featureEnabled;
+
     await Download.#loadExternalTemplates();
+    Download.#attachKeybinds();
   }
 
   /**
@@ -128,6 +193,7 @@ class Download {
   }
 
   static attach(video) {
+    if (!Download.featureEnabled) return;
     if (video.dataset.reelsleekDownloadAttached) return;
     if (Download.#attaching.has(video)) return;
 

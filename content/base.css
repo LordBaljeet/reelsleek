@@ -15,6 +15,11 @@
   --reelsleek-control-radius: 50px;
   --reelsleek-control-radius-sm: 8px;
   --reelsleek-control-radius-pill: 20px;
+  /* Live-toggleable radius used by the floating control panels (fullscreen
+     container, play button, audio control). Defaults to the squared look;
+     flipped to --reelsleek-control-radius via .reelsleek-radius-round on
+     <body> when the user picks "Round" in the Appearance tab. */
+  --reelsleek-control-radius-mode: var(--reelsleek-control-radius-sm);
   --reelsleek-control-padding: 5px;
   --reelsleek-control-padding-large: 10px;
   --reelsleek-control-size: 30px;
@@ -57,6 +62,11 @@
   --slider-thumb-size: var(--reelsleek-slider-thumb-size);
   --transition-opacity: var(--reelsleek-transition-opacity);
   --transition-expand: var(--reelsleek-transition-expand);
+}
+
+/* Round corners mode — toggled from the popup's Appearance tab */
+body.reelsleek-radius-round {
+  --reelsleek-control-radius-mode: var(--reelsleek-control-radius);
 }
 
 /* ── Custom toolbar chrome ──────────────────────────────────────────────── */
@@ -237,6 +247,15 @@ div:has(> .reelsleek-toolbar):hover > .reelsleek-toolbar {
   height: var(--reelsleek-icon-size-native);
 }
 
+/* `all: unset` above resets position back to static, which would let the
+   download button's ::before fill overlay (position: absolute) escape the
+   button and paint against a distant positioned ancestor instead. Restore
+   containment here, after the unset, so the animation stays button-sized. */
+.reelsleek-download:not(:is(.reelsleek-toolbar-container *)) {
+  position: relative;
+  isolation: isolate;
+}
+
 /* ── Seekbar ────────────────────────────────────────────────────────────── */
 
 .reelsleek-video-control {
@@ -371,7 +390,7 @@ body.reelsleek-seekbar-always-visible .reelsleek-video-control {
   align-items: center;
   background-color: var(--reelsleek-control-bg);
   padding: var(--reelsleek-control-padding);
-  border-radius: var(--reelsleek-control-radius-sm);
+  border-radius: var(--reelsleek-control-radius-mode);
   overflow: hidden;
   position: absolute;
   z-index: var(--reelsleek-z-control);
@@ -452,7 +471,7 @@ div:has(> div > video):fullscreen .reelsleek-collapse-icon {
   height: var(--reelsleek-control-size-large);
   background-color: var(--reelsleek-control-bg);
   padding: var(--reelsleek-control-padding-large);
-  border-radius: var(--reelsleek-control-radius-sm);
+  border-radius: var(--reelsleek-control-radius-mode);
   margin: auto;
   overflow: hidden;
   border: none;
@@ -572,9 +591,51 @@ body.theater-mode-active div[class=""] > div > div.html-div {
 
 /* ── Download states ────────────────────────────────────────────────────── */
 
+.reelsleek-download {
+  position: relative;
+  isolation: isolate;
+}
+
+.reelsleek-download svg {
+  position: relative;
+  transition: stroke 0.15s ease;
+}
+
+/* Brand-gradient wipe that fills the button from top to bottom while the
+   video is being resolved, holds at full opacity, then the actual download
+   fires and the button settles back to its default state. */
+.reelsleek-download::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #fb23b8 0%, #6b09d6 100%);
+  opacity: 0;
+  clip-path: inset(100% 0 0 0);
+  z-index: -1;
+  pointer-events: none;
+  transition:
+    clip-path 0.42s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 0.15s ease;
+}
+
 .reelsleek-download[data-state="loading"] {
   opacity: var(--reelsleek-loading-opacity) !important;
   pointer-events: none;
+}
+
+.reelsleek-download[data-state="ready"] {
+  opacity: 1 !important;
+  pointer-events: none;
+}
+
+.reelsleek-download[data-state="ready"]::before {
+  opacity: 1;
+  clip-path: inset(0% 0 0 0);
+}
+
+.reelsleek-download[data-state="ready"] svg {
+  stroke: #fff;
 }
 
 .reelsleek-download[data-state="error"] svg {
@@ -587,6 +648,11 @@ body.theater-mode-active div[class=""] > div > div.html-div {
 
 .reelsleek-download:not(:is(.reelsleek-toolbar-container *))[data-state="loading"] {
   opacity: var(--reelsleek-loading-opacity);
+  pointer-events: none;
+}
+
+.reelsleek-download:not(:is(.reelsleek-toolbar-container *))[data-state="ready"] {
+  opacity: 1;
   pointer-events: none;
 }
 
@@ -603,7 +669,7 @@ body.theater-mode-active div[class=""] > div > div.html-div {
   gap: 10px;
   background-color: var(--reelsleek-control-bg);
   padding: var(--reelsleek-control-padding);
-  border-radius: var(--reelsleek-control-radius-sm);
+  border-radius: var(--reelsleek-control-radius-mode);
   overflow: hidden;
   position: absolute;
   z-index: var(--reelsleek-z-control);

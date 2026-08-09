@@ -16,6 +16,7 @@ class AudioControlModule {
 
     if (!templateElement) return;
     const clone = document.importNode(templateElement.content, true);
+    Keybinds.applyTitles(clone);
     this.container.appendChild(clone);
 
     // 2. Query structural interactions and layout parameters
@@ -244,9 +245,9 @@ class AudioControl {
   }
 
   static #attachKeybinds() {
-    addKeybind("KeyM", () => AudioControl.toggleMute());
-    addKeybind("Minus", () => AudioControl.setVolume(Math.max(AudioControl.volume - 0.1, 0)));
-    addKeybind("Equal", () => AudioControl.setVolume(Math.min(AudioControl.volume + 0.1, 1)));
+    registerKeybind("toggleMute", "KeyM", "Toggle mute", "Audio", () => AudioControl.toggleMute());
+    registerKeybind("volumeDown", "Minus", "Volume down", "Audio", () => AudioControl.setVolume(Math.max(AudioControl.volume - 0.1, 0)));
+    registerKeybind("volumeUp", "Equal", "Volume up", "Audio", () => AudioControl.setVolume(Math.min(AudioControl.volume + 0.1, 1)));
   }
 
   static async #loadExternalTemplates() {

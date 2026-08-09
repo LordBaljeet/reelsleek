@@ -12,6 +12,7 @@ class AutoScrollModule {
 
     // 1. Extract structural fragments from the external asset
     const clone = document.importNode(templateElement.content, true);
+    Keybinds.applyTitles(clone);
     this.button = clone.querySelector(".reelsleek-autoscroll");
     if (!this.button) return;
 
@@ -68,6 +69,9 @@ class AutoScroll {
   /** @type {boolean} Whether autoscroll is enabled */
   static autoscrollEnabled = false;
 
+  /** @type {boolean} Whether the autoscroll feature is present/usable at all */
+  static featureEnabled = true;
+
   static #eventsPublisher = new EventPublisher();
 
   static #template = null;
@@ -81,7 +85,27 @@ class AutoScroll {
 
   static #StorageKeys = {
     "autoscrollKey": "reelsleek-autoscroll-enabled",
+    "featureEnabledKey": "reelsleek-autoscroll-feature-enabled",
   };
+
+  /**
+   * Enables or disables the autoscroll feature itself (present/usable),
+   * as opposed to autoscrollEnabled which is whether it's actively firing.
+   * Persists the choice and applies it immediately across the page.
+   * @param {boolean} enabled
+   */
+  static setFeatureEnabled(enabled) {
+    AutoScroll.featureEnabled = enabled;
+    browser.storage.local.set({
+      [AutoScroll.#StorageKeys.featureEnabledKey]: enabled,
+    });
+
+    if (enabled) {
+      FeatureOrder.reattachAll();
+    } else {
+      getCleanVideos().forEach((video) => AutoScroll.detach(video));
+    }
+  }
 
   /**
    * Sets the autoscroll state and persists the preference.
@@ -115,8 +139,10 @@ class AutoScroll {
   static async #loadStates() {
     const result = await browser.storage.local.get([
       AutoScroll.#StorageKeys.autoscrollKey,
+      AutoScroll.#StorageKeys.featureEnabledKey,
     ]);
     AutoScroll.autoscrollEnabled = result[AutoScroll.#StorageKeys.autoscrollKey] ?? AutoScroll.autoscrollEnabled;
+    AutoScroll.featureEnabled = result[AutoScroll.#StorageKeys.featureEnabledKey] ?? AutoScroll.featureEnabled;
   }
 
   /**
@@ -129,7 +155,8 @@ class AutoScroll {
   }
 
   static #attachKeybinds() {
-    addKeybind("KeyA", () => {
+    registerKeybind("toggleAutoscroll", "KeyA", "Toggle autoscroll", "Navigation", () => {
+      if (!AutoScroll.featureEnabled) return;
       if (!PageHandler.isReel()) return;
       AutoScroll.toggleAutoscroll();
     });
@@ -158,6 +185,7 @@ class AutoScroll {
    * @param {HTMLVideoElement} video - The video element to attach autoscroll to
    */
   static attach(video) {
+    if (!AutoScroll.featureEnabled) return;
     if (!PageHandler.isReel()) return;
     if (video.dataset.reelsleekAutoscrollAttached) return;
 

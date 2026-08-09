@@ -11,6 +11,7 @@ class RotateModule {
 
     // 1. Unpack structure fragments out of the asset instance
     const clone = document.importNode(templateElement.content, true);
+    Keybinds.applyTitles(clone);
     this.container = clone.querySelector(".reelsleek-rotate-container");
     if (!this.container) return;
 
@@ -91,6 +92,27 @@ class Rotate {
   /** @type {WeakMap<HTMLVideoElement, RotateModule>} Track map allocations */
   static #videoInstances = new WeakMap();
 
+  /** @type {boolean} Whether the rotate feature is present/usable at all */
+  static featureEnabled = true;
+
+  static #StorageKey = "reelsleek-rotate-feature-enabled";
+
+  /**
+   * Enables or disables the rotate feature itself (present/usable).
+   * Persists the choice and applies it immediately across the page.
+   * @param {boolean} enabled
+   */
+  static setFeatureEnabled(enabled) {
+    Rotate.featureEnabled = enabled;
+    browser.storage.local.set({ [Rotate.#StorageKey]: enabled });
+
+    if (enabled) {
+      FeatureOrder.reattachAll();
+    } else {
+      getCleanVideos().forEach((video) => Rotate.detach(video));
+    }
+  }
+
   /**
    * Applies geometric alterations onto video element frames.
    * Explicitly safe from execution tracking context context mutations.
@@ -146,15 +168,18 @@ class Rotate {
    * @private
    */
   static #attachKeybinds() {
-    addKeybind("KeyJ", () => {
+    registerKeybind("rotateLeft", "KeyJ", "Rotate left", "Playback", () => {
+      if (!Rotate.featureEnabled) return;
       if (!PageHandler.isReel()) return;
       Rotate.rotateVideo(-1);
     });
-    addKeybind("KeyK", () => {
+    registerKeybind("rotateRight", "KeyK", "Rotate right", "Playback", () => {
+      if (!Rotate.featureEnabled) return;
       if (!PageHandler.isReel()) return;
       Rotate.rotateVideo(1);
     });
-    addKeybind("KeyH", () => {
+    registerKeybind("rotateReset", "KeyH", "Reset rotation", "Playback", () => {
+      if (!Rotate.featureEnabled) return;
       if (!PageHandler.isReel()) return;
       const video = VideoControl.currentlyPlayingVideo;
       if (!video) return;
@@ -185,6 +210,9 @@ class Rotate {
    * @returns {Promise<void>}
    */
   static async setup() {
+    const result = await browser.storage.local.get([Rotate.#StorageKey]);
+    Rotate.featureEnabled = result[Rotate.#StorageKey] ?? Rotate.featureEnabled;
+
     await Rotate.#loadExternalTemplates();
     Rotate.#attachKeybinds();
   }
@@ -194,6 +222,7 @@ class Rotate {
    * @param {HTMLVideoElement} video - Active streaming context target
    */
   static attach(video) {
+    if (!Rotate.featureEnabled) return;
     if (video.dataset.reelsleekRotateAttached) return;
     if (!window.location.href.includes('/reels/')) return;
 

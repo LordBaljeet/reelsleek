@@ -173,6 +173,117 @@ class ToolbarMode {
   }
 }
 
+/**
+ * Controls the corner radius of the floating control panels (fullscreen
+ * container, play button, audio control) — "sm" (squared) or "round".
+ * Purely a CSS toggle: applying it just flips a body class that base.css
+ * uses to swap the shared --reelsleek-control-radius-mode token.
+ */
+class ControlRadius {
+  static #mode = "sm";
+
+  static #StorageKey = "reelsleek-control-radius-mode";
+
+  static get mode() {
+    return this.#mode;
+  }
+
+  static async setup() {
+    const result = await browser.storage.local.get([this.#StorageKey]);
+    this.#mode = result[this.#StorageKey] ?? "sm";
+    this.#applyBodyClass();
+  }
+
+  static setMode(mode) {
+    this.#mode = mode;
+    browser.storage.local.set({ [this.#StorageKey]: mode });
+    this.#applyBodyClass();
+  }
+
+  static #applyBodyClass() {
+    document.body.classList.toggle(
+      "reelsleek-radius-round",
+      this.#mode === "round",
+    );
+  }
+}
+
+/**
+ * Controls the relative order in which the four toggleable feature buttons
+ * (theater mode, autoscroll, download, rotate) are attached to a video.
+ * Since each module's DOM-insertion logic places its button immediately
+ * adjacent to whatever was inserted just before it (in both custom-toolbar
+ * and native-IG modes), simply calling .attach() in this order is enough to
+ * control their actual on-page visual order — no extra DOM surgery needed.
+ */
+class FeatureOrder {
+  static #StorageKey = "reelsleek-controls-feature-order";
+  static #defaultOrder = ["theater", "autoscroll", "download", "rotate"];
+
+  static order = [...FeatureOrder.#defaultOrder];
+
+  static async setup() {
+    const result = await browser.storage.local.get([FeatureOrder.#StorageKey]);
+    FeatureOrder.order = FeatureOrder.#normalize(result[FeatureOrder.#StorageKey]);
+  }
+
+  /**
+   * @param {string[]} order
+   */
+  static setOrder(order) {
+    FeatureOrder.order = FeatureOrder.#normalize(order);
+    browser.storage.local.set({
+      [FeatureOrder.#StorageKey]: FeatureOrder.order,
+    });
+  }
+
+  /**
+   * Ensures a saved order only contains known feature ids, and appends any
+   * ids missing from it (e.g. a feature added in a later version) at the end.
+   * @param {unknown} order
+   * @returns {string[]}
+   */
+  static #normalize(order) {
+    if (!Array.isArray(order)) return [...FeatureOrder.#defaultOrder];
+    const valid = order.filter((id) => FeatureOrder.#defaultOrder.includes(id));
+    const missing = FeatureOrder.#defaultOrder.filter((id) => !valid.includes(id));
+    return [...valid, ...missing];
+  }
+
+  /**
+   * Attaches the four reorderable feature modules to a video in the user's
+   * chosen order. Fullscreen/audio/ambient are unaffected — they aren't
+   * user-orderable.
+   * @param {HTMLVideoElement} video
+   */
+  static attachAll(video) {
+    const attachers = {
+      theater: () => TheaterMode.attach(video),
+      autoscroll: () => AutoScroll.attach(video),
+      download: () => Download.attach(video),
+      rotate: () => Rotate.attach(video),
+    };
+    FeatureOrder.order.forEach((id) => attachers[id]?.());
+  }
+
+  /**
+   * Detaches and re-attaches all four reorderable features on every video,
+   * guaranteeing they land in the user's chosen order — used whenever the
+   * order itself changes, or a previously-disabled feature comes back on
+   * (so it re-inserts at its saved position rather than just at the end).
+   */
+  static reattachAll() {
+    const videos = getCleanVideos();
+    videos.forEach((video) => {
+      Download.detach(video);
+      TheaterMode.detach(video);
+      Rotate.detach(video);
+      AutoScroll.detach(video);
+    });
+    videos.forEach((video) => FeatureOrder.attachAll(video));
+  }
+}
+
 function attachToolbar(video) {
   //do not attach toolbar to reels if not in custom mode
   if (PageHandler.isReel() && !ToolbarMode.isCustom()) return;
@@ -204,6 +315,176 @@ function addKeybind(key, action) {
       action?.(e);
     }
   });
+}
+
+/**
+ * Central registry + dispatcher for user-overridable keyboard shortcuts.
+ * Modules register their shortcuts once via registerKeybind(); the active
+ * key for each one is resolved at keydown-time, so overrides saved from the
+ * popup take effect immediately without any module re-registering anything.
+ */
+class Keybinds {
+  static #StorageKey = "reelsleek-keybind-overrides";
+
+  /** @type {Map<string, {id:string, defaultKey:string, label:string, category:string, action:Function}>} */
+  static #registry = new Map();
+  static #order = [];
+  static #overrides = {};
+  static #listenerAttached = false;
+
+  /**
+   * Registers a user-configurable shortcut.
+   * @param {string} id - Stable identifier, used for storage + popup wiring.
+   * @param {string} defaultKey - Default KeyboardEvent.code (e.g. "KeyD").
+   * @param {string} label - Human readable description shown in the popup.
+   * @param {string} category - Grouping shown in the popup (e.g. "Playback").
+   * @param {(e: KeyboardEvent) => void} action - Handler to run when pressed.
+   */
+  static register(id, defaultKey, label, category, action) {
+    if (!Keybinds.#registry.has(id)) Keybinds.#order.push(id);
+    Keybinds.#registry.set(id, { id, defaultKey, label, category, action });
+    Keybinds.#ensureListener();
+  }
+
+  static #ensureListener() {
+    if (Keybinds.#listenerAttached) return;
+    Keybinds.#listenerAttached = true;
+    document.body.addEventListener("keydown", (e) => {
+      if (isInput()) return;
+      if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+      for (const def of Keybinds.#registry.values()) {
+        const active = Keybinds.#overrides[def.id] ?? def.defaultKey;
+        if (active && e.code === active) {
+          def.action(e);
+        }
+      }
+    });
+  }
+
+  /**
+   * Loads any saved overrides from storage. Should be awaited early during
+   * page setup, before the user has a realistic chance to press a key.
+   */
+  static async setup() {
+    const result = await browser.storage.local.get([Keybinds.#StorageKey]);
+    Keybinds.#overrides = result[Keybinds.#StorageKey] ?? {};
+    Keybinds.applyTitles(document);
+  }
+
+  static #persist() {
+    browser.storage.local.set({
+      [Keybinds.#StorageKey]: Keybinds.#overrides,
+    });
+    Keybinds.applyTitles(document);
+  }
+
+  /**
+   * @param {string} id
+   * @returns {string|null} The currently active KeyboardEvent.code for this shortcut.
+   */
+  static keyFor(id) {
+    const def = Keybinds.#registry.get(id);
+    if (!def) return null;
+    return Keybinds.#overrides[id] ?? def.defaultKey;
+  }
+
+  /**
+   * @returns {Array<{id:string,label:string,category:string,defaultKey:string,key:string,isCustom:boolean}>}
+   */
+  static list() {
+    return Keybinds.#order
+      .map((id) => Keybinds.#registry.get(id))
+      .filter(Boolean)
+      .map((def) => ({
+        id: def.id,
+        label: def.label,
+        category: def.category,
+        defaultKey: def.defaultKey,
+        key: Keybinds.#overrides[def.id] ?? def.defaultKey,
+        isCustom: Object.prototype.hasOwnProperty.call(
+          Keybinds.#overrides,
+          def.id,
+        ),
+      }));
+  }
+
+  /**
+   * @param {string} key - KeyboardEvent.code to check.
+   * @param {string} excludeId - Id to exclude from the search (the one being reassigned).
+   * @returns {string|null} The id of the shortcut already bound to `key`, if any.
+   */
+  static findConflict(key, excludeId) {
+    for (const def of Keybinds.#registry.values()) {
+      if (def.id === excludeId) continue;
+      const active = Keybinds.#overrides[def.id] ?? def.defaultKey;
+      if (active === key) return def.id;
+    }
+    return null;
+  }
+
+  /**
+   * Assigns a new key to a shortcut, persists it, and clears the key from
+   * any other shortcut that was already using it (last write wins).
+   * @param {string} id
+   * @param {string} key
+   */
+  static setKey(id, key) {
+    if (!Keybinds.#registry.has(id))
+      return { ok: false, error: "Unknown keybind" };
+    if (!key) return { ok: false, error: "No key provided" };
+
+    const conflictId = Keybinds.findConflict(key, id);
+    let clearedLabel = null;
+    if (conflictId) {
+      delete Keybinds.#overrides[conflictId];
+      clearedLabel = Keybinds.#registry.get(conflictId)?.label ?? null;
+    }
+    Keybinds.#overrides[id] = key;
+    Keybinds.#persist();
+    return { ok: true, clearedLabel };
+  }
+
+  static resetKey(id) {
+    delete Keybinds.#overrides[id];
+    Keybinds.#persist();
+    return { ok: true };
+  }
+
+  static resetAll() {
+    Keybinds.#overrides = {};
+    Keybinds.#persist();
+    return { ok: true };
+  }
+
+  /**
+   * Keeps `title` attributes of elements marked with [data-keybind-id] in
+   * sync with the currently active key, e.g. "Download video (D)".
+   * Safe to call on a detached DocumentFragment before it's inserted.
+   * @param {ParentNode} root
+   */
+  static applyTitles(root) {
+    root?.querySelectorAll?.("[data-keybind-id]").forEach((el) => {
+      const id = el.dataset.keybindId;
+      const base = el.dataset.keybindTitle;
+      if (!base) return;
+      const key = Keybinds.keyFor(id);
+      el.title = key ? `${base} (${formatKeybindLabel(key)})` : base;
+    });
+  }
+}
+
+/**
+ * Registers a user-configurable keyboard shortcut. Thin wrapper around
+ * Keybinds.register() so call sites read consistently with the fixed,
+ * non-configurable addKeybind() above.
+ * @param {string} id
+ * @param {string} defaultKey
+ * @param {string} label
+ * @param {string} category
+ * @param {(e: KeyboardEvent) => void} action
+ */
+function registerKeybind(id, defaultKey, label, category, action) {
+  Keybinds.register(id, defaultKey, label, category, action);
 }
 
 class PageHandler {

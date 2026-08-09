@@ -9,7 +9,15 @@ browser.runtime.onMessage.addListener((msg) => {
         audioControlAlwaysVisible: AudioControl.alwaysVisible,
         videoControlAlwaysVisible: VideoControl.alwaysVisible,
         toolbarMode: ToolbarMode.mode,
+        controlRadiusMode: ControlRadius.mode,
         ambientModeEnabled: AmbientMode.enabled,
+        doubleClickFullscreenEnabled: VideoControl.doubleClickFullscreenEnabled,
+        autoscrollEnabled: AutoScroll.autoscrollEnabled,
+        theaterModeFeatureEnabled: TheaterMode.featureEnabled,
+        autoscrollFeatureEnabled: AutoScroll.featureEnabled,
+        downloadFeatureEnabled: Download.featureEnabled,
+        rotateFeatureEnabled: Rotate.featureEnabled,
+        featureOrder: FeatureOrder.order,
       });
 
     case "setOrientation":
@@ -28,6 +36,10 @@ browser.runtime.onMessage.addListener((msg) => {
       AutoScroll.setAutoscrollEnabled(msg.value);
       return Promise.resolve({ ok: true });
 
+    case "setDoubleClickFullscreen":
+      VideoControl.setDoubleClickFullscreenEnabled(msg.value);
+      return Promise.resolve({ ok: true });
+
     case "setAmbientMode":
       AmbientMode.setEnabled(msg.value);
       return Promise.resolve({ ok: true });
@@ -35,6 +47,43 @@ browser.runtime.onMessage.addListener((msg) => {
     case "setTheaterMode":
       TheaterMode.toggleTheaterMode();
       return Promise.resolve({ ok: true });
+
+    case "setControlRadius":
+      ControlRadius.setMode(msg.value);
+      return Promise.resolve({ ok: true });
+
+    case "setTheaterModeFeatureEnabled":
+      TheaterMode.setFeatureEnabled(msg.value);
+      return Promise.resolve({ ok: true });
+
+    case "setAutoscrollFeatureEnabled":
+      AutoScroll.setFeatureEnabled(msg.value);
+      return Promise.resolve({ ok: true });
+
+    case "setDownloadFeatureEnabled":
+      Download.setFeatureEnabled(msg.value);
+      return Promise.resolve({ ok: true });
+
+    case "setRotateFeatureEnabled":
+      Rotate.setFeatureEnabled(msg.value);
+      return Promise.resolve({ ok: true });
+
+    case "setFeatureOrder":
+      FeatureOrder.setOrder(msg.order);
+      FeatureOrder.reattachAll();
+      return Promise.resolve({ ok: true });
+
+    case "getKeybinds":
+      return Promise.resolve({ ok: true, keybinds: Keybinds.list() });
+
+    case "setKeybind":
+      return Promise.resolve(Keybinds.setKey(msg.id, msg.key));
+
+    case "resetKeybind":
+      return Promise.resolve(Keybinds.resetKey(msg.id));
+
+    case "resetAllKeybinds":
+      return Promise.resolve(Keybinds.resetAll());
 
     case "setToolbarMode": {
       ToolbarMode.setMode(msg.value);
@@ -48,10 +97,7 @@ browser.runtime.onMessage.addListener((msg) => {
         v.parentElement.querySelector(".reelsleek-toolbar")?.remove();
         attachToolbar(v);
         VideoControl.attach(v);
-        Download.attach(v);
-        TheaterMode.attach(v);
-        Rotate.attach(v);
-        AutoScroll.attach(v);
+        FeatureOrder.attachAll(v);
       });
       return Promise.resolve({ ok: true });
     }
@@ -69,10 +115,7 @@ browser.runtime.onMessage.addListener((msg) => {
       videos.forEach((v) => {
         AudioControl.attach(v);
         VideoControl.attach(v);
-        Download.attach(v);
-        TheaterMode.attach(v);
-        Rotate.attach(v);
-        AutoScroll.attach(v);
+        FeatureOrder.attachAll(v);
       });
       return Promise.resolve({ ok: true });
     }

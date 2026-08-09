@@ -20,6 +20,8 @@
     class="reelsleek-fullscreen-button"
     aria-label="Toggle fullscreen"
     title="Toggle fullscreen (F)"
+    data-keybind-id="toggleFullscreen"
+    data-keybind-title="Toggle fullscreen"
   >
     <svg
       class="reelsleek-expand-icon"
@@ -50,6 +52,8 @@
     class="reelsleek-play-button"
     aria-label="Toggle play/pause"
     title="Toggle play/pause (P)"
+    data-keybind-id="togglePlay"
+    data-keybind-title="Toggle play/pause"
   >
     <svg
       class="reelsleek-play-icon"
@@ -70,6 +74,8 @@
     class="reelsleek-theater-mode"
     aria-label="Toggle theater mode"
     title="Toggle theater mode (T)"
+    data-keybind-id="toggleTheaterMode"
+    data-keybind-title="Toggle theater mode"
   >
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -98,6 +104,8 @@
       class="reelsleek-rotate reelsleek-rotate-main"
       aria-label="Reset Rotation"
       title="Reset Rotation (H)"
+      data-keybind-id="rotateReset"
+      data-keybind-title="Reset rotation"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -116,6 +124,8 @@
         class="reelsleek-rotate reelsleek-rotate-left"
         aria-label="Rotate left"
         title="Rotate left (J)"
+        data-keybind-id="rotateLeft"
+        data-keybind-title="Rotate left"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -162,6 +172,8 @@
         class="reelsleek-rotate reelsleek-rotate-right"
         aria-label="Rotate right"
         title="Rotate right (K)"
+        data-keybind-id="rotateRight"
+        data-keybind-title="Rotate right"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -214,6 +226,8 @@
     class="reelsleek-autoscroll"
     aria-label="Toggle autoscroll"
     title="Toggle autoscroll (A)"
+    data-keybind-id="toggleAutoscroll"
+    data-keybind-title="Toggle autoscroll"
   >
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -239,6 +253,8 @@
     class="reelsleek-download"
     aria-label="Download video"
     title="Download video"
+    data-keybind-id="download"
+    data-keybind-title="Download video"
   >
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -260,7 +276,12 @@
 
 <!-- ── AUDIO ── -->
 <template id="reelsleek-audio-template">
-  <button class="reelsleek-mute-button" aria-label="Toggle mute">
+  <button
+    class="reelsleek-mute-button"
+    aria-label="Toggle mute"
+    data-keybind-id="toggleMute"
+    data-keybind-title="Toggle mute"
+  >
     <svg
       class="reelsleek-volume-icon"
       viewBox="0 0 24 24"

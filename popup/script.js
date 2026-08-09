@@ -111,13 +111,35 @@ class PopupController {
     // Content container
     this.container = document.getElementById("container");
 
+    // Tabs
+    this.tabButtons = document.querySelectorAll(".tab-btn");
+    this.tabPanels = document.querySelectorAll(".tab-panel");
+
     // Control elements
     this.orientToggle = document.getElementById("orientToggle");
     this.volumeVisToggle = document.getElementById("volumeVisToggle");
     this.seekbarVisToggle = document.getElementById("seekbarVisToggle");
     this.ambientModeToggle = document.getElementById("ambientModeToggle");
     this.toolbarModeToggle = document.getElementById("toolbarModeToggle");
+    this.controlRadiusToggle = document.getElementById("controlRadiusToggle");
     this.reloadBtn = document.getElementById("reloadBtn");
+
+    // Controls tab (behavior toggles)
+    this.dblClickFsToggle = document.getElementById("dblClickFsToggle");
+    this.theaterFeatureToggle = document.getElementById("theaterFeatureToggle");
+    this.autoscrollFeatureToggle = document.getElementById("autoscrollFeatureToggle");
+    this.downloadFeatureToggle = document.getElementById("downloadFeatureToggle");
+    this.rotateFeatureToggle = document.getElementById("rotateFeatureToggle");
+    this.featureList = document.getElementById("featureList");
+    this.featureRows = Array.from(
+      this.featureList.querySelectorAll(".feature-row"),
+    );
+    this.draggedFeatureRow = null;
+
+    // Keybinds tab
+    this.keybindGroups = document.getElementById("keybindGroups");
+    this.resetKeybindsBtn = document.getElementById("resetKeybindsBtn");
+    this.captureState = null;
 
     // Info elements
     this.volumeState = document.getElementById("volume-state");
@@ -131,6 +153,7 @@ class PopupController {
     this.activeState = "inactive";
 
     this.#attachEventListeners();
+    this.#setupFeatureReordering();
   }
 
   /**
@@ -142,6 +165,11 @@ class PopupController {
     this.permBtn.addEventListener("click", () =>
       this.#handlePermissionRequest(),
     );
+
+    // Tabs
+    this.tabButtons.forEach((btn) => {
+      btn.addEventListener("click", () => this.#switchTab(btn.dataset.tab));
+    });
 
     // Orientation toggle
     this.orientToggle.querySelectorAll(".orient-btn").forEach((btn) => {
@@ -164,8 +192,152 @@ class PopupController {
       );
     });
 
+    // Control radius toggle
+    this.controlRadiusToggle.querySelectorAll(".orient-btn").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        this.#handleControlRadiusChange(btn.dataset.radius),
+      );
+    });
+
     // Reload button
     this.reloadBtn.addEventListener("click", () => this.#handleReload());
+
+    // Controls tab switches
+    this.#setupSwitch(this.dblClickFsToggle, "setDoubleClickFullscreen");
+    this.#setupSwitch(this.theaterFeatureToggle, "setTheaterModeFeatureEnabled");
+    this.#setupSwitch(this.autoscrollFeatureToggle, "setAutoscrollFeatureEnabled");
+    this.#setupSwitch(this.downloadFeatureToggle, "setDownloadFeatureEnabled");
+    this.#setupSwitch(this.rotateFeatureToggle, "setRotateFeatureEnabled");
+
+    // Keybinds tab
+    this.resetKeybindsBtn.addEventListener("click", () =>
+      this.#handleResetAllKeybinds(),
+    );
+  }
+
+  /**
+   * Switches the visible tab panel.
+   * @param {string} tabName - "appearance" | "controls" | "keybinds"
+   * @private
+   */
+  #switchTab(tabName) {
+    this.#cancelCapture();
+    this.tabButtons.forEach((btn) =>
+      btn.classList.toggle("active", btn.dataset.tab === tabName),
+    );
+    this.tabPanels.forEach((panel) =>
+      panel.classList.toggle("active", panel.dataset.panel === tabName),
+    );
+  }
+
+  /**
+   * Wires a boolean toggle switch to a content-script message.
+   * @param {HTMLInputElement} input - The checkbox input
+   * @param {string} messageType - The message type to send with { value }
+   * @private
+   */
+  #setupSwitch(input, messageType) {
+    input.addEventListener("change", async () => {
+      await Messenger.sendToActiveTab(messageType, { value: input.checked });
+      this.showToast("saved", "ok");
+    });
+  }
+
+  /**
+   * Wires up drag-and-drop reordering for the Features list. Dragging is
+   * only armed from the grip handle so clicking the switch or label never
+   * accidentally starts a drag.
+   * @private
+   */
+  #setupFeatureReordering() {
+    this.featureRows.forEach((row) => {
+      const handle = row.querySelector(".drag-handle");
+      if (!handle) return;
+
+      const disarm = () => row.removeAttribute("draggable");
+      handle.addEventListener("mousedown", () =>
+        row.setAttribute("draggable", "true"),
+      );
+      row.addEventListener("mouseup", disarm);
+
+      row.addEventListener("dragstart", (e) => {
+        this.draggedFeatureRow = row;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", row.dataset.feature);
+        requestAnimationFrame(() => row.classList.add("dragging"));
+      });
+
+      row.addEventListener("dragover", (e) => {
+        if (!this.draggedFeatureRow || this.draggedFeatureRow === row) return;
+        e.preventDefault();
+        const rect = row.getBoundingClientRect();
+        const before = e.clientY < rect.top + rect.height / 2;
+        this.#clearFeatureDragIndicators();
+        row.classList.add(before ? "drag-over-top" : "drag-over-bottom");
+      });
+
+      row.addEventListener("drop", (e) => {
+        if (!this.draggedFeatureRow || this.draggedFeatureRow === row) return;
+        e.preventDefault();
+        const before = row.classList.contains("drag-over-top");
+        this.#clearFeatureDragIndicators();
+        this.featureList.insertBefore(
+          this.draggedFeatureRow,
+          before ? row : row.nextSibling,
+        );
+      });
+
+      row.addEventListener("dragend", () => {
+        disarm();
+        row.classList.remove("dragging");
+        this.#clearFeatureDragIndicators();
+        this.draggedFeatureRow = null;
+        this.#persistFeatureOrder();
+      });
+    });
+  }
+
+  /** @private */
+  #clearFeatureDragIndicators() {
+    this.featureRows.forEach((row) =>
+      row.classList.remove("drag-over-top", "drag-over-bottom"),
+    );
+  }
+
+  /**
+   * Sends the current DOM order of the feature list to the content script,
+   * which persists it and live-reapplies it on any open Instagram tabs.
+   * @private
+   * @returns {Promise<void>}
+   */
+  async #persistFeatureOrder() {
+    const order = Array.from(this.featureList.children).map(
+      (row) => row.dataset.feature,
+    );
+    await Messenger.sendToActiveTab("setFeatureOrder", { order });
+    this.showToast("saved", "ok");
+  }
+
+  /**
+   * Reorders the feature rows in the DOM to match a saved order (from the
+   * ping response). Rows not present in the order (e.g. a feature added in
+   * a later version) simply stay wherever they already are.
+   * @param {string[]} [order]
+   * @private
+   */
+  #applyFeatureOrder(order) {
+    if (!Array.isArray(order) || !order.length) return;
+
+    const rowsByFeature = new Map(
+      this.featureRows.map((row) => [row.dataset.feature, row]),
+    );
+    order.forEach((feature) => {
+      const row = rowsByFeature.get(feature);
+      if (row) this.featureList.appendChild(row);
+    });
+    this.featureRows = Array.from(
+      this.featureList.querySelectorAll(".feature-row"),
+    );
   }
 
   /**
@@ -216,6 +388,7 @@ class PopupController {
 
     if (response) {
       this.#updateUIFromResponse(response);
+      this.#loadKeybinds();
     }
   }
 
@@ -258,6 +431,19 @@ class PopupController {
 
     // Update toolbar mode
     this.#applyToolbarModeToggle(response.toolbarMode ?? "custom");
+
+    // Update control radius
+    this.#applyControlRadiusToggle(response.controlRadiusMode ?? "sm");
+
+    // Update behavior switches
+    this.dblClickFsToggle.checked = response.doubleClickFullscreenEnabled ?? true;
+    this.theaterFeatureToggle.checked = response.theaterModeFeatureEnabled ?? true;
+    this.autoscrollFeatureToggle.checked = response.autoscrollFeatureEnabled ?? true;
+    this.downloadFeatureToggle.checked = response.downloadFeatureEnabled ?? true;
+    this.rotateFeatureToggle.checked = response.rotateFeatureEnabled ?? true;
+
+    // Update feature order
+    this.#applyFeatureOrder(response.featureOrder);
   }
 
   /**
@@ -368,6 +554,27 @@ class PopupController {
   }
 
   /**
+   * Applies the active state to the control radius toggle.
+   * @param {string} mode - "sm" or "round"
+   * @private
+   */
+  #applyControlRadiusToggle(mode) {
+    this.controlRadiusToggle.className = "orient-toggle " + mode;
+  }
+
+  /**
+   * Handles control radius toggle change.
+   * @param {string} mode - "sm" or "round"
+   * @private
+   * @returns {Promise<void>}
+   */
+  async #handleControlRadiusChange(mode) {
+    this.#applyControlRadiusToggle(mode);
+    await Messenger.sendToActiveTab("setControlRadius", { value: mode });
+    this.showToast("saved", "ok");
+  }
+
+  /**
    * Handles reload button click.
    * @private
    * @returns {Promise<void>}
@@ -389,6 +596,177 @@ class PopupController {
       this.reloadBtn.classList.remove("spinning");
       this.reloadBtn.disabled = false;
     }, 1000);
+  }
+
+  /**
+   * Fetches the current keybinds from the content script and renders them.
+   * @private
+   * @returns {Promise<void>}
+   */
+  async #loadKeybinds() {
+    const response = await Messenger.sendToActiveTab("getKeybinds");
+    if (!response?.ok) {
+      this.keybindGroups.innerHTML =
+        '<p class="hint-text">Open an Instagram tab to manage keybinds.</p>';
+      return;
+    }
+    this.#renderKeybinds(response.keybinds);
+  }
+
+  /**
+   * Renders the keybinds list, grouped by category.
+   * @param {Array<{id:string,label:string,category:string,key:string,isCustom:boolean}>} keybinds
+   * @private
+   */
+  #renderKeybinds(keybinds) {
+    this.keybindGroups.innerHTML = "";
+
+    const groups = new Map();
+    keybinds.forEach((kb) => {
+      if (!groups.has(kb.category)) groups.set(kb.category, []);
+      groups.get(kb.category).push(kb);
+    });
+
+    groups.forEach((items, category) => {
+      const heading = document.createElement("p");
+      heading.className = "keybind-category";
+      heading.textContent = category;
+      this.keybindGroups.appendChild(heading);
+
+      items.forEach((kb) => {
+        this.keybindGroups.appendChild(this.#buildKeybindRow(kb));
+      });
+    });
+  }
+
+  /**
+   * Builds a single keybind row with a key-capture button and reset control.
+   * @param {{id:string,label:string,key:string,isCustom:boolean}} kb
+   * @returns {HTMLElement}
+   * @private
+   */
+  #buildKeybindRow(kb) {
+    const row = document.createElement("div");
+    row.className = "keybind-row";
+    row.dataset.id = kb.id;
+
+    const label = document.createElement("span");
+    label.className = "keybind-label";
+    label.textContent = kb.label;
+
+    const controls = document.createElement("div");
+    controls.className = "keybind-controls";
+
+    const captureBtn = document.createElement("button");
+    captureBtn.type = "button";
+    captureBtn.className = "key-capture" + (kb.isCustom ? " custom" : "");
+    captureBtn.textContent = formatKeybindLabel(kb.key);
+    captureBtn.addEventListener("click", () =>
+      this.#beginCapture(kb.id, captureBtn),
+    );
+
+    const resetBtn = document.createElement("button");
+    resetBtn.type = "button";
+    resetBtn.className = "key-reset";
+    resetBtn.title = "Reset to default";
+    resetBtn.hidden = !kb.isCustom;
+    resetBtn.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>';
+    resetBtn.addEventListener("click", async () => {
+      await Messenger.sendToActiveTab("resetKeybind", { id: kb.id });
+      this.showToast("reset", "ok");
+      this.#loadKeybinds();
+    });
+
+    controls.appendChild(captureBtn);
+    controls.appendChild(resetBtn);
+    row.appendChild(label);
+    row.appendChild(controls);
+    return row;
+  }
+
+  /**
+   * Puts a key-capture button into "listening" mode and records the next
+   * valid keypress as the new shortcut for `id`.
+   * @param {string} id - The keybind id being reassigned
+   * @param {HTMLButtonElement} btn - The capture button that was clicked
+   * @private
+   */
+  #beginCapture(id, btn) {
+    this.#cancelCapture();
+
+    const originalText = btn.textContent;
+    btn.textContent = "Press a key…";
+    btn.classList.add("listening");
+
+    const handleKeydown = async (e) => {
+      if (e.code === "Escape" || KEYBIND_RESERVED_CODES.has(e.code)) {
+        e.preventDefault();
+        this.#cancelCapture();
+        return;
+      }
+      // Ignore bare modifier presses and combos; wait for a plain key.
+      if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      this.#cancelCapture();
+
+      const response = await Messenger.sendToActiveTab("setKeybind", {
+        id,
+        key: e.code,
+      });
+      if (response?.ok) {
+        this.showToast(
+          response.clearedLabel
+            ? `saved (cleared from ${response.clearedLabel})`
+            : "saved",
+          "ok",
+        );
+      } else {
+        this.showToast(response?.error ?? "failed to save", "err");
+      }
+      this.#loadKeybinds();
+    };
+
+    const handleBlur = () => this.#cancelCapture();
+
+    this.captureState = { btn, originalText, handleKeydown, handleBlur };
+    window.addEventListener("keydown", handleKeydown, true);
+    window.addEventListener("blur", handleBlur);
+  }
+
+  /**
+   * Cancels any in-progress key capture and restores the button's label.
+   * @private
+   */
+  #cancelCapture() {
+    if (!this.captureState) return;
+    const { btn, originalText, handleKeydown, handleBlur } =
+      this.captureState;
+    window.removeEventListener("keydown", handleKeydown, true);
+    window.removeEventListener("blur", handleBlur);
+    btn.textContent = originalText;
+    btn.classList.remove("listening");
+    this.captureState = null;
+  }
+
+  /**
+   * Handles the "Reset all keybinds" button click.
+   * @private
+   * @returns {Promise<void>}
+   */
+  async #handleResetAllKeybinds() {
+    this.resetKeybindsBtn.disabled = true;
+    const response = await Messenger.sendToActiveTab("resetAllKeybinds");
+    this.resetKeybindsBtn.disabled = false;
+
+    if (response?.ok) {
+      this.showToast("all keybinds reset", "ok");
+      this.#loadKeybinds();
+    } else {
+      this.showToast("reset failed", "err");
+    }
   }
 }
 

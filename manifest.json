@@ -20,6 +20,7 @@
       "matches": ["*://*.instagram.com/*"],
       "css": ["content/base.css"],
       "js": [
+        "keyLabels.js",
         "content/shared.js",
         "content/mediaResolver.js",
         "content/audioControl.js",

@@ -132,6 +132,7 @@ class FullscreenModule {
     const toolbarContainer = this.video.parentElement.querySelector('.reelsleek-toolbar-container');
     if (toolbarContainer) {
       const clone = document.importNode(templateElement.content, true);
+      Keybinds.applyTitles(clone);
       toolbarContainer.appendChild(clone);
       this.button = toolbarContainer.querySelector('.reelsleek-fullscreen-button');
       this.button.addEventListener('click', this.#handleButtonClick);
@@ -140,6 +141,7 @@ class FullscreenModule {
       this.container.className = "reelsleek-fullscreen-container";
 
       const clone = document.importNode(templateElement.content, true);
+      Keybinds.applyTitles(clone);
       this.container.appendChild(clone);
 
       this.button = this.container.querySelector("button");
@@ -175,10 +177,12 @@ class PlayOverlayModule {
 
     if (templateElement) {
       const clone = document.importNode(templateElement.content, true);
+      Keybinds.applyTitles(clone);
       this.container.appendChild(clone);
     }
 
     this.container.addEventListener("dblclick", (e) => {
+      if (!VideoControl.doubleClickFullscreenEnabled) return;
       e.stopPropagation();
       this.toggleFullscreen(this.video);
     });
@@ -207,9 +211,11 @@ class VideoControl {
   static currentlyPlayingVideo = null;
   static alwaysVisible = true;
   static fullscreenOn = false;
+  static doubleClickFullscreenEnabled = true;
 
   static #StorageKeys = {
     "visibilityKey": "reelsleek-videocontrol-visibility",
+    "doubleClickFullscreenKey": "reelsleek-videocontrol-dblclick-fullscreen",
   };
 
   // Static dictionary cache holding our file-extracted HTML templates
@@ -254,8 +260,12 @@ class VideoControl {
   }
 
   static async #loadStates() {
-    const result = await browser.storage.local.get([this.#StorageKeys.visibilityKey]);
+    const result = await browser.storage.local.get([
+      this.#StorageKeys.visibilityKey,
+      this.#StorageKeys.doubleClickFullscreenKey,
+    ]);
     this.alwaysVisible = result[this.#StorageKeys.visibilityKey] ?? this.alwaysVisible;
+    this.doubleClickFullscreenEnabled = result[this.#StorageKeys.doubleClickFullscreenKey] ?? this.doubleClickFullscreenEnabled;
   }
 
   // Asynchronously requests the bundled asset template package file
@@ -279,24 +289,34 @@ class VideoControl {
   }
 
   static #saveStates() {
-    browser.storage.local.set({ [this.#StorageKeys.visibilityKey]: this.alwaysVisible });
+    browser.storage.local.set({
+      [this.#StorageKeys.visibilityKey]: this.alwaysVisible,
+      [this.#StorageKeys.doubleClickFullscreenKey]: this.doubleClickFullscreenEnabled,
+    });
+  }
+
+  static setDoubleClickFullscreenEnabled(enabled) {
+    this.doubleClickFullscreenEnabled = enabled;
+    this.#saveStates();
   }
 
   static #attachKeybinds() {
-    addKeybind("ArrowRight", () => {
+    registerKeybind("seekForward", "ArrowRight", "Seek forward 5s", "Playback", () => {
       if (PageHandler.isStorie()) return;
       this.currentlyPlayingVideo.currentTime += 5;
     });
-    addKeybind("ArrowLeft", () => {
+    registerKeybind("seekBackward", "ArrowLeft", "Seek backward 5s", "Playback", () => {
       if (PageHandler.isStorie()) return;
       this.currentlyPlayingVideo.currentTime -= 5;
     });
-    addKeybind("KeyP", () => this.togglePlay(this.currentlyPlayingVideo));
+    registerKeybind("togglePlay", "KeyP", "Play / pause", "Playback", () => this.togglePlay(this.currentlyPlayingVideo));
+    // Space is kept as a fixed, always-on secondary shortcut for play/pause
+    // (standard video-player convention) and isn't user-remappable.
     addKeybind("Space", (e) => {
       this.togglePlay(this.currentlyPlayingVideo);
       stopEvent(e);
     });
-    addKeybind("KeyF", () => this.toggleFullscreen(this.currentlyPlayingVideo));
+    registerKeybind("toggleFullscreen", "KeyF", "Toggle fullscreen", "Playback", () => this.toggleFullscreen(this.currentlyPlayingVideo));
   }
 
   static async setup() {

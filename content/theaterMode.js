@@ -11,6 +11,7 @@ class TheaterModeModule {
 
     // 1. Deep clone structural component elements out of the document template node
     const clone = document.importNode(templateElement.content, true);
+    Keybinds.applyTitles(clone);
     this.button = clone.querySelector(".reelsleek-theater-mode");
     if (!this.button) return;
 
@@ -60,6 +61,9 @@ class TheaterMode {
   /** @type {boolean} Whether theater mode is enabled */
   static enabled = false;
 
+  /** @type {boolean} Whether the theater mode feature is present/usable at all */
+  static featureEnabled = true;
+
   static #eventsPublisher = new EventPublisher();
 
   static #Event = {
@@ -71,6 +75,30 @@ class TheaterMode {
 
   /** @type {WeakMap<HTMLVideoElement, TheaterModeModule>} Tracks active component instances */
   static #videoInstances = new WeakMap();
+
+  static #StorageKey = "reelsleek-theater-feature-enabled";
+
+  /**
+   * Enables or disables the theater mode feature itself (present/usable).
+   * Persists the choice and applies it immediately, force-exiting theater
+   * mode first if it happened to be active when disabled.
+   * @param {boolean} enabled
+   */
+  static setFeatureEnabled(enabled) {
+    TheaterMode.featureEnabled = enabled;
+    browser.storage.local.set({ [TheaterMode.#StorageKey]: enabled });
+
+    if (enabled) {
+      FeatureOrder.reattachAll();
+      return;
+    }
+
+    if (TheaterMode.enabled) {
+      TheaterMode.setTheaterModeEnabled(false);
+      if (document.fullscreenElement) document.exitFullscreen();
+    }
+    getCleanVideos().forEach((video) => TheaterMode.detach(video));
+  }
 
   /**
    * Sets the theater mode state and persists the preference.
@@ -107,7 +135,8 @@ class TheaterMode {
    * @private
    */
   static #attachKeybinds() {
-    addKeybind("KeyT", () => {
+    registerKeybind("toggleTheaterMode", "KeyT", "Toggle theater mode", "Playback", () => {
+      if (!TheaterMode.featureEnabled) return;
       if (!PageHandler.isReel()) return;
       TheaterMode.toggleTheaterMode();
     });
@@ -135,6 +164,9 @@ class TheaterMode {
    * @returns {Promise<void>}
    */
   static async setup() {
+    const result = await browser.storage.local.get([TheaterMode.#StorageKey]);
+    TheaterMode.featureEnabled = result[TheaterMode.#StorageKey] ?? TheaterMode.featureEnabled;
+
     await TheaterMode.#loadExternalTemplates();
     TheaterMode.#attachKeybinds();
     
@@ -150,6 +182,7 @@ class TheaterMode {
    * @param {HTMLVideoElement} video - The target rendering component video element
    */
   static attach(video) {
+    if (!TheaterMode.featureEnabled) return;
     if (video.dataset.reelsleekTheaterModeAttached) return;
     if (!window.location.href.includes('/reels/')) return;
 

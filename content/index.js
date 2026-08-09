@@ -22,7 +22,10 @@ const handleHomePageVideo = (video) => {
 };
 
 (async () => {
+  await Keybinds.setup();
   await ToolbarMode.setup();
+  await ControlRadius.setup();
+  await FeatureOrder.setup();
   await AudioControl.setup();
   await VideoControl.setup();
   await AutoScroll.setup();
@@ -61,10 +64,7 @@ const handleHomePageVideo = (video) => {
     VideoControl.setCurrentlyPlayingVideo(video, true);
     AudioControl.attach(video);
     VideoControl.attach(video);
-    Download.attach(video);
-    TheaterMode.attach(video);
-    Rotate.attach(video);
-    AutoScroll.attach(video);
+    FeatureOrder.attachAll(video);
     AmbientMode.attach(video);
 
     handleHomePageVideo(video);
