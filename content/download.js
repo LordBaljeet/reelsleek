@@ -2,7 +2,8 @@
  * UI MODULE: DownloadModule
  * Renders a download button for a single video and resolves/downloads its
  * real CDN source URL on click (see content/mediaResolver.js for how the
- * `blob:` playback URL is turned into something downloadable).
+ * video's `blob:` playback element is mapped back to a shortcode and
+ * resolved to a direct CDN URL).
  */
 class DownloadModule {
   constructor(video, templateElement) {
@@ -25,17 +26,30 @@ class DownloadModule {
       const toolbarContainer = this.video.parentElement.querySelector(
         ".reelsleek-toolbar-container",
       );
-      if (
-        !toolbarContainer ||
-        toolbarContainer.querySelector(".reelsleek-download")
-      )
+      if (!toolbarContainer) {
+        console.warn(
+          "[Download] no .reelsleek-toolbar-container found for video — button not injected",
+        );
         return;
+      }
+      if (toolbarContainer.querySelector(".reelsleek-download")) return;
       toolbarContainer.appendChild(fragment);
     } else {
       const parent = this.video.closest('[style*="--x-width"]');
-      if (!parent) return;
+      if (!parent) {
+        console.warn(
+          "[Download] no [style*='--x-width'] ancestor found — Instagram's DOM may have changed, button not injected",
+        );
+        return;
+      }
       const toolbar = parent.nextElementSibling;
-      if (!toolbar || toolbar.querySelector(".reelsleek-download")) return;
+      if (!toolbar) {
+        console.warn(
+          "[Download] expected toolbar sibling not found — button not injected",
+        );
+        return;
+      }
+      if (toolbar.querySelector(".reelsleek-download")) return;
       const children = [...toolbar.children];
       toolbar.insertBefore(fragment, children[children.length - 2]);
     }
@@ -47,22 +61,17 @@ class DownloadModule {
 
     this.#setState("loading");
     try {
-      const result = await MediaResolver.resolve(this.video);
-      if (!result) throw new Error("No downloadable video found");
+      const url = await MediaResolver.resolve(this.video);
+      if (!url) throw new Error("No downloadable video found");
 
-      const filename = Download.buildFilename();
+      const filename = Download.buildFilename(this.video);
 
-      if (result.type === "blob") {
-        Download.saveBlob(result.blob, filename);
-      } else {
-        const response = await browser.runtime.sendMessage({
-          type: "downloadMedia",
-          url: result.url,
-          filename,
-        });
-        if (!response?.ok)
-          throw new Error(response?.error ?? "Download failed");
-      }
+      const response = await browser.runtime.sendMessage({
+        type: "downloadMedia",
+        url,
+        filename,
+      });
+      if (!response?.ok) throw new Error(response?.error ?? "Download failed");
 
       this.#setState("done");
     } catch (err) {
@@ -94,6 +103,17 @@ class Download {
   /** @type {WeakMap<HTMLVideoElement, DownloadModule>} */
   static #videoInstances = new WeakMap();
 
+  /** @type {IntersectionObserver|null} */
+  static #viewportObserver = null;
+
+  // Tracks videos currently waiting on #loadExternalTemplates() to finish,
+  // so a second attach() call for the same video (e.g. re-triggered by a
+  // fast infinite-scroll re-render) doesn't queue a duplicate template
+  // callback and end up constructing two DownloadModule instances for one
+  // <video>.
+  /** @type {WeakSet<HTMLVideoElement>} */
+  static #attaching = new WeakSet();
+
   static async #loadExternalTemplates() {
     try {
       const fileUrl = browser.runtime.getURL("content/controls.html");
@@ -111,46 +131,53 @@ class Download {
     }
   }
 
+  static #setupViewportObserver() {
+    if (typeof IntersectionObserver === "undefined") return;
+
+    Download.#viewportObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const video = entry.target;
+            // Pre-warm the resolution when video enters viewport
+            MediaResolver.prewarm(video);
+          }
+        }
+      },
+      {
+        rootMargin: "200px 0px", // Start pre-warming slightly before video is visible
+        threshold: 0.01,
+      },
+    );
+  }
+
   static async setup() {
     await Download.#loadExternalTemplates();
+    Download.#setupViewportObserver();
   }
 
   /**
-   * Builds a filename for the currently-targeted download.
+   * Builds a filename for the given video's download, using the same
+   * shortcode resolution `MediaResolver` uses to find the video itself (DOM
+   * first, then page URL), so home-feed downloads get a meaningful name
+   * instead of always falling back to a generic timestamp.
+   * @param {HTMLVideoElement} video
    * @returns {string}
    */
-  static buildFilename() {
-    const shortcode = PageHandler.getShortcode() ?? `video-${Date.now()}`;
+  static buildFilename(video) {
+    const shortcode =
+      MediaResolver.getShortcode(video) ?? `video-${Date.now()}`;
     return `reelsleek/${shortcode}.mp4`;
-  }
-
-  /**
-   * Saves a Blob directly via a temporary `<a download>` link. Used for the
-   * captured-bytes path, which never leaves the page's own context (no
-   * `downloads` permission/background round-trip required).
-   * @param {Blob} blob
-   * @param {string} filename - May include a folder segment; only the base
-   *   name is used, since `<a download>` does not support subfolders.
-   */
-  static saveBlob(blob, filename) {
-    const baseName = filename.split("/").pop() || "video.mp4";
-    const objectUrl = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = baseName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
   }
 
   static attach(video) {
     if (video.dataset.reelsleekDownloadAttached) return;
+    if (Download.#attaching.has(video)) return; // already waiting on the template load below
 
     if (!Download.#template) {
+      Download.#attaching.add(video);
       Download.#loadExternalTemplates().then(() => {
+        Download.#attaching.delete(video);
         if (Download.#template && !video.dataset.reelsleekDownloadAttached) {
           Download.attach(video);
         }
@@ -161,11 +188,18 @@ class Download {
     const moduleInstance = new DownloadModule(video, Download.#template);
     Download.#videoInstances.set(video, moduleInstance);
     video.dataset.reelsleekDownloadAttached = "true";
+
+    // Start observing for pre-warming
+    Download.#viewportObserver?.observe(video);
+
+    MediaResolver.prewarm(video);
   }
 
   static detach(video) {
-    if (!video.dataset.reelsleekDownloadAttached) return;
+    Download.#attaching.delete(video);
 
+    if (!video.dataset.reelsleekDownloadAttached) return;
+    Download.#viewportObserver?.unobserve(video);
     const instance = Download.#videoInstances.get(video);
     if (instance) {
       instance.destroy();

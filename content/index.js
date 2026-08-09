@@ -6,6 +6,10 @@ const handleHomePageVideo = (video) => {
   const closestLink = video.closest("a");
   if (!closestLink || !closestLink.href.includes("reels/")) return;
 
+  // Stash the original permalink before clearing it below, so MediaResolver
+  // can still recover this post's shortcode later (e.g. for the download
+  // feature) even after the href has been neutralized.
+  closestLink.dataset.reelsleekOriginalHref = closestLink.href;
   closestLink.href = "javascript:void(0);";
   closestLink.draggable = false;
 

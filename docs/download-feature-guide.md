@@ -138,19 +138,56 @@ Registered to run in the page's `MAIN` world in `manifest.json` (Chrome 111+/Fir
 See `content/mediaResolver.js`. It exposes a single entry point,
 `MediaResolver.resolve(video)`, which:
 
-1. Checks (and briefly waits for) the JSON-sniffed CDN URL cache, keyed by
-   `PageHandler.getShortcode()`. This is a complete, pre-muxed progressive MP4 (audio
-   included) and is only relevant/reliable on permalink pages.
-2. Falls back to the page's `og:video`/`og:video:secure_url` meta tag — also a
-   complete, muxed file.
-3. Falls back to requesting captured bytes for `video.currentSrc || video.src` from
+1. Checks (and briefly waits ~600ms for) the JSON-sniffed CDN URL cache, keyed by
+   `MediaResolver.getShortcode(video)` (the public entry point, backed by the private
+   `#getShortcodeForVideo(video)` DOM lookup with a `PageHandler.getShortcode()`
+   fallback). This is a complete, pre-muxed progressive MP4 (audio included), and is
+   the fastest path since it costs no extra network round trip — but Instagram's home
+   feed API response frequently omits the full `video_url` for a given item entirely
+   (lighter-weight preview data), so this cache is often simply empty there.
+2. If we're actually on this exact post's permalink page (`PageHandler.getShortcode()`
+   matches the resolved shortcode), reads the *live* `og:video` meta tag — free, and
+   safe here since the URL itself confirms which post it describes.
+3. Otherwise, **actively fetches this specific shortcode's own permalink page**
+   (`#fetchOgVideoForShortcode`, tries `/reel/{shortcode}/` then `/p/{shortcode}/`)
+   and reads `og:video` from *that* freshly-fetched document. This is what makes
+   home-feed downloads reliably include audio: rather than passively hoping
+   Instagram's own feed API already sent the full video data (unreliable — that's why
+   audio only "worked" when a video happened to be opened as a reel or the page was
+   refreshed, both of which trigger IG's own full-data fetch), we request it directly,
+   by shortcode, ourselves. Being keyed by shortcode also means it can never resolve
+   to a stale/unrelated post the way blindly reading the *live* page's meta tag could.
+4. Falls back to requesting captured bytes for `video.currentSrc || video.src` from
    the MAIN-world script (Step 2). This is an exact match tied to the specific
    element clicked (immune to cross-contamination with other preloaded/adjacent
    videos), but may be missing audio, since it only ever captures one adaptive-stream
-   track. Used as a last resort — e.g. on the home feed, where there's no reliable
-   per-item shortcode to key off of.
-4. Returns `null` if nothing matched — **deliberately no "last URL seen" fallback**,
+   track. Used only when no shortcode could be found at all.
+5. Returns `null` if nothing matched — **deliberately no "last URL seen" fallback**,
    since that's what caused an earlier wrong-video bug this design fixes.
+
+Earlier revisions of this feature trusted the *live* `og:video` tag unconditionally as
+a fallback. That's unsafe: Instagram's SPA doesn't reliably clear that tag on
+client-side navigation, so on the home feed it could hold a stale value from whatever
+permalink was last viewed in that tab — silently downloading the wrong (but
+audio-having) video instead of genuinely being an audio problem. Step 3's active,
+shortcode-scoped fetch replaces that unsafe fallback.
+
+`#getShortcodeForVideo(video)` handles the case that `PageHandler.getShortcode()`
+can't: pages like the home feed, where several posts are visible/preloaded at once and
+the URL never changes to reflect any single one of them. It looks for a permalink
+anchor scoped tightly to that specific video (either a wrapping `<a>`, as used by Reels
+tiles, or one found within the enclosing `<article>`/`[role="article"]` container for
+regular feed posts) — never a page-wide search, to avoid resolving to a *different*
+nearby post. One wrinkle: `handleHomePageVideo` (`content/index.js`) neutralizes a
+Reels tile's `href` to `javascript:void(0)` to stop it from hijacking clicks, so it
+stashes the original value in `dataset.reelsleekOriginalHref` first. Since an
+`[href*="/reel/"]`-style selector alone would no longer match the anchor once its live
+`href` has been overwritten, `#SHORTCODE_LINK_SELECTOR` also matches on the presence of
+that stashed `data-reelsleek-original-href` attribute so the anchor can still be
+*found*, before `#extractShortcodeFromHref` reads the stashed value off it.
+
+`MediaResolver.getShortcode(video)` is also used by `Download.buildFilename(video)`,
+so home-feed downloads get a meaningful filename instead of a generic timestamp.
 
 It returns a tagged result — `{ type: "blob", blob }` for captured bytes, or
 `{ type: "url", url }` for a CDN URL — so the caller can decide how to save it.
@@ -242,13 +279,24 @@ Manually verify on each surface type ReelSleek already distinguishes via `PageHa
 - [ ] Toggling "custom" vs "native" toolbar mode still shows/hides the button correctly
 - [ ] Rapid scroll through many reels doesn't leak the JSON cache
       (cap `MediaResolver.#jsonCache` size, e.g. an LRU of ~50 entries — already done)
-- [ ] Downloaded files have audio on reel/post permalinks (JSON/`og:video` path)
+- [ ] Rapid scroll through many reels doesn't leak captured MediaSource bytes in
+      `networkInterceptor.js`'s `blobUrlToSourceBuffers` (capped at
+      `MAX_TRACKED_BLOB_URLS` — already done; each entry can hold several MB, so this
+      matters for long scrolling sessions)
+- [ ] Downloaded files have audio on reel/post permalinks (JSON/live-`og:video` path)
+- [ ] Downloaded files have audio on home-feed Reels tiles *without* first opening
+      them as a reel or refreshing the page (exercises `#fetchOgVideoForShortcode`,
+      not just the passive JSON cache)
+- [ ] Downloaded filenames use the real shortcode (not a generic timestamp) on both
+      permalink pages and the home feed
 
 ### Step 10 — Known limitations to document for users
 
-- On pages with no reliable per-item shortcode (e.g. the home feed, before a video has
-  ever updated the URL), resolution falls back to the raw `MediaSource` capture, which
-  only ever contains one adaptive-stream track — usually video only, no audio. Note
+- If a video's post has no discoverable shortcode at all (neither from the URL nor
+  from a nearby permalink anchor — e.g. a feed post whose DOM doesn't match the
+  `<article>`/anchor heuristics `#getShortcodeForVideo` looks for), resolution falls
+  back to the raw `MediaSource` capture, which only ever contains one adaptive-stream
+  track — usually video only, no audio. Note
   this as a known limitation (as `flurrux/insta-loader` does for a similar reason)
   rather than silently shipping a broken file. Properly merging separately-captured
   video and audio `SourceBuffer`s into one valid container isn't just concatenation —
@@ -257,6 +305,11 @@ Manually verify on each surface type ReelSleek already distinguishes via `PageHa
 - Instagram frequently changes its API/response shapes; keep `extractVideoUrls`
   defensive (walk the whole JSON tree rather than hard-coded paths) to reduce how
   often this breaks.
+- `#fetchOgVideoForShortcode` adds a real network round trip (up to two sequential
+  requests, `/reel/` then `/p/`) whenever the passive JSON cache misses — typically
+  every home-feed download that hasn't already been opened as a reel. This is an
+  acceptable UX tradeoff for an explicit, infrequent user action (the button shows a
+  `loading` state throughout), but avoid calling it in a hot path or automatically.
 - Downloading others' content may violate Instagram's Terms of Service or copyright
   law depending on use — consider adding a brief in-product notice, and make the
   feature opt-in/toggleable from the popup like other ReelSleek features.
