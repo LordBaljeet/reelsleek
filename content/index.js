@@ -57,15 +57,15 @@ const handleHomePageVideo = (video) => {
     )
       return;
     if (video.closest('[role="none')) return; // Skip gifs in embedded chats
-    if (!PageHandler.isStorie()) attachToolbar(video);
+    attachToolbar(video);
     VideoControl.setCurrentlyPlayingVideo(video, true);
     AudioControl.attach(video);
     VideoControl.attach(video);
-    AutoScroll.attach(video);
+    Download.attach(video);
     TheaterMode.attach(video);
     Rotate.attach(video);
+    AutoScroll.attach(video);
     AmbientMode.attach(video);
-    Download.attach(video);
 
     handleHomePageVideo(video);
   }

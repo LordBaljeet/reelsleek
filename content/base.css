@@ -1,78 +1,119 @@
-/* ── Shared design tokens ── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Reelsleek — shared styles (injected once)
+
+   Toolbar mode is driven by DOM ancestry, not a body flag:
+     • Native IG toolbar → control is NOT under .reelsleek-toolbar-container
+     • Custom toolbar    → control lives under .reelsleek-toolbar-container
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Design tokens ──────────────────────────────────────────────────────── */
 
 :root {
-  --slider-thumb-size: 15px;
-  --control-bg: rgba(82, 80, 80, 0.5);
-  --control-bg-pressed: rgba(82, 80, 80, 1);
-  --control-radius: 50px;
-  --control-padding: 5px;
-  --control-padding-large: 10px;
-  --control-size: 30px;
-  --control-size-large: 50px;
-  --icon-size: 22px;
-  --transition-opacity: opacity 0.2s ease;
-  --transition-expand: 0.25s ease;
+  --reelsleek-control-bg: rgba(82, 80, 80, 0.5);
+  --reelsleek-control-bg-pressed: rgba(82, 80, 80, 1);
+  --reelsleek-control-bg-strong: rgba(0, 0, 0, 0.45);
+  --reelsleek-control-radius: 50px;
+  --reelsleek-control-radius-sm: 8px;
+  --reelsleek-control-radius-pill: 20px;
+  --reelsleek-control-padding: 5px;
+  --reelsleek-control-padding-large: 10px;
+  --reelsleek-control-size: 30px;
+  --reelsleek-control-size-large: 50px;
+  --reelsleek-icon-size: 22px;
+  --reelsleek-icon-size-native: 24px;
+  --reelsleek-slider-thumb-size: 15px;
+  --reelsleek-track-height: 5px;
+  --reelsleek-track-height-hover: 12px;
+  --reelsleek-track-color: #6b6b6ba2;
+  --reelsleek-fill-color: #fff;
+  --reelsleek-muted-track: #d3d3d3;
+  --reelsleek-text-on-dark: #fff;
+  --reelsleek-success: #4caf50;
+  --reelsleek-error: #ff5c5c;
+  --reelsleek-border-subtle: rgba(255, 255, 255, 0.15);
+  --reelsleek-hover-fill: rgba(255, 255, 255, 0.15);
+  --reelsleek-native-opacity: 0.15;
+  --reelsleek-native-opacity-hover: 0.7;
+  --reelsleek-toolbar-btn-opacity: 0.55;
+  --reelsleek-toolbar-btn-opacity-hover: 0.9;
+  --reelsleek-loading-opacity: 0.35;
+  --reelsleek-transition-opacity: opacity 0.2s ease;
+  --reelsleek-transition-expand: 0.25s ease;
+  --reelsleek-transition-fast: 0.1s ease;
+  --reelsleek-transition-press: transform 0.1s ease;
+  --reelsleek-z-control: 1000;
+  --reelsleek-z-tooltip: 1001;
+  --reelsleek-z-flyout: 2000;
+
+  /* Aliases used by existing markup / older rules */
+  --control-bg: var(--reelsleek-control-bg);
+  --control-bg-pressed: var(--reelsleek-control-bg-pressed);
+  --control-radius: var(--reelsleek-control-radius);
+  --control-padding: var(--reelsleek-control-padding);
+  --control-padding-large: var(--reelsleek-control-padding-large);
+  --control-size: var(--reelsleek-control-size);
+  --control-size-large: var(--reelsleek-control-size-large);
+  --icon-size: var(--reelsleek-icon-size);
+  --slider-thumb-size: var(--reelsleek-slider-thumb-size);
+  --transition-opacity: var(--reelsleek-transition-opacity);
+  --transition-expand: var(--reelsleek-transition-expand);
 }
 
-
-/* ── Toolbar ── */
+/* ── Custom toolbar chrome ──────────────────────────────────────────────── */
 
 .reelsleek-toolbar {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: var(--control-bg);
+  background-color: var(--reelsleek-control-bg);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  border-radius: var(--control-radius);
+  border-radius: var(--reelsleek-control-radius);
   overflow-y: clip;
   position: absolute;
-  z-index: 1000;
+  z-index: var(--reelsleek-z-control);
   top: 10px;
   right: 10px;
-  max-height: var(--control-size);
+  max-height: var(--reelsleek-control-size);
   opacity: 0;
   pointer-events: none;
   transition:
-    max-height var(--transition-expand),
+    max-height var(--reelsleek-transition-expand),
     opacity 0.2s ease;
-
-  button {
-    width: var(--control-size);
-    height: var(--control-size);
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px;
-    flex-shrink: 0;
-  }
-
-  svg {
-    width: var(--icon-size);
-    height: var(--icon-size);
-    flex-shrink: 0;
-  }
 }
 
-/* ── Toggle button ── */
+.reelsleek-toolbar button {
+  width: var(--reelsleek-control-size);
+  height: var(--reelsleek-control-size);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--reelsleek-text-on-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.reelsleek-toolbar svg {
+  width: var(--reelsleek-icon-size);
+  height: var(--reelsleek-icon-size);
+  flex-shrink: 0;
+}
 
 .reelsleek-toolbar-logo {
-  width: var(--icon-size);
-  height: var(--icon-size);
+  width: var(--reelsleek-icon-size);
+  height: var(--reelsleek-icon-size);
   object-fit: contain;
   display: block;
 }
 
 .reelsleek-toolbar:hover .reelsleek-toolbar-toggle {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid var(--reelsleek-border-subtle);
 }
 
-/* ── Action button container ── */
-
+/* Action-button host inside the custom toolbar */
 .reelsleek-toolbar-container {
   display: flex;
   flex-direction: column;
@@ -80,45 +121,41 @@
   gap: 2px;
   padding: 4px 0;
   width: 100%;
-  z-index: 1000;
+  z-index: var(--reelsleek-z-control);
 }
 
-/* ── Action buttons (fullscreen, theater, autoscroll) ── */
-
-.reelsleek-toolbar-container>button,
-.reelsleek-toolbar-container div>button {
-  opacity: 0.55;
+.reelsleek-toolbar-container > button,
+.reelsleek-toolbar-container div > button {
+  opacity: var(--reelsleek-toolbar-btn-opacity);
   transition:
     opacity 0.2s ease,
-    transform 0.1s ease;
-
-  &:hover {
-    opacity: 0.9;
-  }
-
-  &:active {
-    transform: scale(0.88);
-  }
-
-  &[aria-pressed="true"] {
-    opacity: 1;
-  }
+    var(--reelsleek-transition-press);
 }
 
-/* ── Visibility ── */
+.reelsleek-toolbar-container > button:hover,
+.reelsleek-toolbar-container div > button:hover {
+  opacity: var(--reelsleek-toolbar-btn-opacity-hover);
+}
 
-/* Show on hover over the video container */
-div:has(> .reelsleek-toolbar):hover>.reelsleek-toolbar {
+.reelsleek-toolbar-container > button:active,
+.reelsleek-toolbar-container div > button:active {
+  transform: scale(0.88);
+}
+
+.reelsleek-toolbar-container > button[aria-pressed="true"],
+.reelsleek-toolbar-container div > button[aria-pressed="true"] {
+  opacity: 1;
+}
+
+div:has(> .reelsleek-toolbar):hover > .reelsleek-toolbar {
   opacity: 1;
   pointer-events: auto;
 }
 
-/* Expand on toolbar hover */
 .reelsleek-toolbar:hover {
   max-height: 300px;
 }
 
-/* Always visible in fullscreen */
 :fullscreen .reelsleek-toolbar {
   opacity: 1;
   pointer-events: auto;
@@ -127,25 +164,20 @@ div:has(> .reelsleek-toolbar):hover>.reelsleek-toolbar {
 .reelsleek-homepage-author-container {
   position: initial !important;
   background: none !important;
-
-  * {
-    color: rgb(var(--ig-primary-text)) !important;
-  }
 }
 
+.reelsleek-homepage-author-container * {
+  color: rgb(var(--ig-primary-text)) !important;
+}
 
-/*
-  ── Ambient Mode ──
-*/
+/* ── Ambient mode ───────────────────────────────────────────────────────── */
 
-/* The video itself: show the full frame instead of a cropped "cover" fit */
 .reelsleek-ambient-fg {
   object-fit: contain !important;
   position: relative;
   z-index: 1;
 }
 
-/* Blurred backdrop canvas filling the empty space left by object-fit: contain */
 .reelsleek-ambient-bg {
   position: absolute;
   inset: 0;
@@ -157,3 +189,583 @@ div:has(> .reelsleek-toolbar):hover>.reelsleek-toolbar {
   pointer-events: none;
 }
 
+/* ── Native IG toolbar look
+     Applies only when the control is NOT under .reelsleek-toolbar-container
+   ──────────────────────────────────────────────────────────────────────── */
+
+.reelsleek-theater-mode:not(:is(.reelsleek-toolbar-container *)),
+.reelsleek-rotate:not(:is(.reelsleek-toolbar-container *)),
+.reelsleek-autoscroll:not(:is(.reelsleek-toolbar-container *)),
+.reelsleek-download:not(:is(.reelsleek-toolbar-container *)) {
+  all: unset;
+  margin-bottom: 20px;
+  color: rgb(var(--ig-primary-icon));
+  cursor: pointer;
+  opacity: var(--reelsleek-native-opacity);
+  transition:
+    opacity 0.2s ease,
+    var(--reelsleek-transition-press);
+}
+
+.reelsleek-theater-mode:not(:is(.reelsleek-toolbar-container *)):hover,
+.reelsleek-rotate:not(:is(.reelsleek-toolbar-container *)):hover,
+.reelsleek-autoscroll:not(:is(.reelsleek-toolbar-container *)):hover,
+.reelsleek-download:not(:is(.reelsleek-toolbar-container *)):hover {
+  opacity: var(--reelsleek-native-opacity-hover);
+}
+
+.reelsleek-theater-mode:not(:is(.reelsleek-toolbar-container *)):active,
+.reelsleek-rotate:not(:is(.reelsleek-toolbar-container *)):active,
+.reelsleek-autoscroll:not(:is(.reelsleek-toolbar-container *)):active,
+.reelsleek-download:not(:is(.reelsleek-toolbar-container *)):active {
+  transform: scale(0.88);
+}
+
+.reelsleek-theater-mode:not(:is(.reelsleek-toolbar-container *))[aria-pressed="true"],
+.reelsleek-rotate:not(:is(.reelsleek-toolbar-container *))[aria-pressed="true"],
+.reelsleek-autoscroll:not(:is(.reelsleek-toolbar-container *))[aria-pressed="true"] {
+  opacity: 1;
+}
+
+.reelsleek-theater-mode:not(:is(.reelsleek-toolbar-container *)) svg,
+.reelsleek-rotate:not(:is(.reelsleek-toolbar-container *)) svg,
+.reelsleek-autoscroll:not(:is(.reelsleek-toolbar-container *)) svg,
+.reelsleek-download:not(:is(.reelsleek-toolbar-container *)) svg {
+  display: block;
+  flex-shrink: 0;
+  width: var(--reelsleek-icon-size-native);
+  height: var(--reelsleek-icon-size-native);
+}
+
+/* ── Seekbar ────────────────────────────────────────────────────────────── */
+
+.reelsleek-video-control {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: var(--reelsleek-track-height-hover);
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  z-index: var(--reelsleek-z-control);
+}
+
+.reelsleek-seekbar-track,
+.reelsleek-seekbar-fill,
+.reelsleek-seekbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: var(--reelsleek-track-height);
+  transition: height var(--reelsleek-transition-fast);
+}
+
+.reelsleek-seekbar-track {
+  background: var(--reelsleek-track-color);
+  z-index: 998;
+  pointer-events: none;
+}
+
+.reelsleek-seekbar-fill {
+  background: var(--reelsleek-fill-color);
+  transform-origin: left;
+  transform: scaleX(0);
+  z-index: 999;
+  pointer-events: none;
+}
+
+.reelsleek-seekbar {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+  z-index: var(--reelsleek-z-control);
+}
+
+.reelsleek-seekbar::-webkit-slider-runnable-track {
+  height: 100%;
+  border: none;
+  background: transparent;
+}
+
+.reelsleek-seekbar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  opacity: 0;
+  border-radius: 0;
+  width: 2px;
+  height: 14px;
+  background: var(--reelsleek-fill-color);
+  border: none;
+  cursor: pointer;
+}
+
+.reelsleek-seekbar::-moz-range-track {
+  height: 100%;
+  background: transparent;
+}
+
+.reelsleek-seekbar::-moz-range-thumb {
+  opacity: 0;
+  border-radius: 0;
+  width: 2px;
+  background: var(--reelsleek-fill-color);
+  border: none;
+}
+
+.reelsleek-video-control:hover .reelsleek-seekbar,
+.reelsleek-video-control:hover .reelsleek-seekbar-track,
+.reelsleek-video-control:hover .reelsleek-seekbar-fill {
+  height: 100%;
+}
+
+div:has(.reelsleek-video-control):hover > .reelsleek-video-control {
+  opacity: 1;
+}
+
+body.reelsleek-seekbar-always-visible .reelsleek-video-control {
+  opacity: 1;
+}
+
+.reelsleek-video-control[data-show-paused="true"] {
+  opacity: 1;
+}
+
+.reelsleek-video-control[data-show-paused="true"]
+  .reelsleek-seekbar::-webkit-slider-thumb,
+.reelsleek-video-control[data-show-paused="true"]
+  .reelsleek-seekbar::-moz-range-thumb {
+  opacity: 1;
+}
+
+.reelsleek-seekbar-tooltip {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  transform: translateX(-50%);
+  background-color: var(--reelsleek-track-color);
+  color: var(--reelsleek-text-on-dark);
+  padding: 4px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: var(--reelsleek-z-tooltip);
+  white-space: nowrap;
+}
+
+.reelsleek-video-control:hover .reelsleek-seekbar-tooltip {
+  opacity: 1;
+}
+
+/* ── Fullscreen control ─────────────────────────────────────────────────── */
+
+.reelsleek-fullscreen-container {
+  display: flex;
+  align-items: center;
+  background-color: var(--reelsleek-control-bg);
+  padding: var(--reelsleek-control-padding);
+  border-radius: var(--reelsleek-control-radius-sm);
+  overflow: hidden;
+  position: absolute;
+  z-index: var(--reelsleek-z-control);
+  opacity: 0;
+  top: 10px;
+  right: 10px;
+  transition: var(--reelsleek-transition-opacity);
+}
+
+div:has(.reelsleek-fullscreen-container):hover
+  > .reelsleek-fullscreen-container {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.reelsleek-fullscreen-button {
+  display: inherit;
+  width: var(--reelsleek-control-size);
+  height: var(--reelsleek-control-size);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--reelsleek-text-on-dark);
+}
+
+.reelsleek-expand-icon {
+  display: block;
+}
+
+.reelsleek-collapse-icon {
+  display: none;
+}
+
+div:has(> div > video):fullscreen {
+  padding: 10px 0;
+}
+
+div:has(> div > video):fullscreen > div {
+  width: fit-content;
+  position: relative;
+  margin: auto;
+}
+
+div:has(> div > video):fullscreen video {
+  object-fit: contain;
+  width: fit-content;
+  max-width: 100%;
+}
+
+div:has(> div > video):fullscreen .reelsleek-fullscreen-container {
+  opacity: 1;
+}
+
+div:has(> div > video):fullscreen .reelsleek-expand-icon {
+  display: none;
+}
+
+div:has(> div > video):fullscreen .reelsleek-collapse-icon {
+  display: block;
+}
+
+/* ── Play overlay ───────────────────────────────────────────────────────── */
+
+.reelsleek-play-container {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  z-index: var(--reelsleek-z-control);
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transition: var(--reelsleek-transition-opacity);
+}
+
+.reelsleek-play-button {
+  display: none;
+  width: var(--reelsleek-control-size-large);
+  height: var(--reelsleek-control-size-large);
+  background-color: var(--reelsleek-control-bg);
+  padding: var(--reelsleek-control-padding-large);
+  border-radius: var(--reelsleek-control-radius-sm);
+  margin: auto;
+  overflow: hidden;
+  border: none;
+  cursor: pointer;
+  color: var(--reelsleek-text-on-dark);
+}
+
+.reelsleek-play-container[data-show-paused="true"] .reelsleek-play-button {
+  display: inherit;
+}
+
+/* ── Theater mode (layout side-effects) ─────────────────────────────────── */
+
+.reelsleek-theater-mode svg {
+  flex-shrink: 0;
+}
+
+body.theater-mode-active div[role="tablist"],
+body.theater-mode-active
+  div[tabindex="-1"]:has(
+    div > div > div > [data-visualcompletion="ignore-dynamic"]
+  ),
+body.theater-mode-active div[class=""] > div > div.html-div {
+  display: none;
+}
+
+:fullscreen dialog,
+:fullscreen [role="dialog"],
+:fullscreen div:has(> div > div > [role="dialog"]),
+:fullscreen .modal {
+  z-index: 2147483647;
+}
+
+/* ── Rotate ─────────────────────────────────────────────────────────────── */
+
+.reelsleek-rotate svg,
+.reelsleek-autoscroll svg,
+.reelsleek-download svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.reelsleek-rotate-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--reelsleek-control-size);
+}
+
+.reelsleek-rotate-flyout {
+  visibility: hidden;
+  opacity: 0;
+  display: flex;
+  position: absolute;
+  right: 48px;
+  top: 50%;
+  transform: translateY(-50%) translateX(8px);
+  background-color: var(--reelsleek-control-bg);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--reelsleek-border-subtle);
+  border-radius: var(--reelsleek-control-radius-pill);
+  padding: 4px;
+  flex-direction: row;
+  gap: 4px;
+  z-index: var(--reelsleek-z-flyout);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0.2s;
+}
+
+/* Native IG toolbar: nudge flyout to align with their icon column */
+.reelsleek-rotate-flyout:not(:is(.reelsleek-toolbar-container *)) {
+  top: calc(50% - 10px);
+}
+
+.reelsleek-rotate-container:hover .reelsleek-rotate-flyout {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.reelsleek-rotate-flyout::after {
+  content: "";
+  position: absolute;
+  right: -24px;
+  top: 0;
+  width: 24px;
+  height: 100%;
+  background: transparent;
+}
+
+.reelsleek-rotate-flyout .reelsleek-rotate {
+  margin-bottom: 0 !important;
+  opacity: 0.6 !important;
+  padding: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transition:
+    background-color 0.2s,
+    opacity 0.2s !important;
+}
+
+.reelsleek-rotate-flyout .reelsleek-rotate:hover {
+  opacity: 1 !important;
+  background-color: var(--reelsleek-hover-fill) !important;
+}
+
+.reelsleek-rotate-flyout .reelsleek-rotate svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* ── Download states ────────────────────────────────────────────────────── */
+
+.reelsleek-download[data-state="loading"] {
+  opacity: var(--reelsleek-loading-opacity) !important;
+  pointer-events: none;
+}
+
+.reelsleek-download[data-state="error"] svg {
+  stroke: var(--reelsleek-error);
+}
+
+.reelsleek-download[data-state="done"] svg {
+  stroke: var(--reelsleek-success);
+}
+
+.reelsleek-download:not(:is(.reelsleek-toolbar-container *))[data-state="loading"] {
+  opacity: var(--reelsleek-loading-opacity);
+  pointer-events: none;
+}
+
+/* No extra bottom margin when the button sits in the custom toolbar host */
+.reelsleek-toolbar-container .reelsleek-download {
+  margin-bottom: 0 !important;
+}
+
+/* ── Audio control ──────────────────────────────────────────────────────── */
+
+.reelsleek-audio-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--reelsleek-control-bg);
+  padding: var(--reelsleek-control-padding);
+  border-radius: var(--reelsleek-control-radius-sm);
+  overflow: hidden;
+  position: absolute;
+  z-index: var(--reelsleek-z-control);
+  opacity: 0;
+  transition: var(--reelsleek-transition-opacity);
+}
+
+div:has(.reelsleek-audio-control):hover > .reelsleek-audio-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.reelsleek-volume-always-visible .reelsleek-audio-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.reelsleek-audio-control[data-orientation="horizontal"] {
+  top: 10px;
+  left: 10px;
+  width: var(--reelsleek-control-size);
+  max-width: 300px;
+  transition: width var(--reelsleek-transition-expand);
+}
+
+.reelsleek-audio-control[data-orientation="horizontal"]:hover {
+  width: 90%;
+}
+
+.reelsleek-audio-control[data-orientation="horizontal"]
+  .reelsleek-slider-container {
+  width: 100%;
+  margin-right: 10px;
+}
+
+.reelsleek-audio-control[data-orientation="horizontal"]
+  .reelsleek-volume-slider {
+  width: 100%;
+  height: 10px;
+}
+
+.reelsleek-audio-control[data-orientation="vertical"] {
+  bottom: 20px;
+  right: 10px;
+  height: var(--reelsleek-control-size);
+  max-height: 150px;
+  flex-direction: column-reverse;
+  transition: height var(--reelsleek-transition-expand);
+}
+
+.reelsleek-audio-control[data-orientation="vertical"]:hover {
+  height: 90%;
+}
+
+.reelsleek-audio-control[data-orientation="vertical"]
+  .reelsleek-slider-container {
+  min-height: 30px;
+  height: 100%;
+  margin-top: 10px;
+}
+
+.reelsleek-audio-control[data-orientation="vertical"]
+  .reelsleek-volume-slider {
+  height: 100%;
+  width: 10px;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  background: linear-gradient(
+    to top,
+    var(--reelsleek-fill-color) var(--slider-fill, 10%),
+    var(--reelsleek-muted-track) var(--slider-fill, 10%)
+  );
+}
+
+.reelsleek-volume-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 5px;
+  background: linear-gradient(
+    to right,
+    var(--reelsleek-fill-color) var(--slider-fill, 10%),
+    var(--reelsleek-muted-track) var(--slider-fill, 10%)
+  );
+}
+
+.reelsleek-volume-slider::-webkit-slider-runnable-track {
+  height: 100%;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.reelsleek-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--reelsleek-slider-thumb-size);
+  height: var(--reelsleek-slider-thumb-size);
+  border-radius: 50%;
+  background: var(--reelsleek-fill-color);
+  cursor: pointer;
+}
+
+.reelsleek-volume-slider::-moz-range-track {
+  height: 100%;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.reelsleek-volume-slider::-moz-range-thumb {
+  width: var(--reelsleek-slider-thumb-size);
+  height: var(--reelsleek-slider-thumb-size);
+  border-radius: 50%;
+  background: var(--reelsleek-fill-color);
+  cursor: pointer;
+  border: none;
+}
+
+.reelsleek-volume-slider::-moz-range-progress {
+  background: var(--reelsleek-fill-color);
+  height: 100%;
+  width: 100%;
+  border-radius: var(--reelsleek-control-radius-sm);
+}
+
+.reelsleek-mute-button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  height: var(--reelsleek-control-size);
+}
+
+.reelsleek-volume-icon {
+  height: var(--reelsleek-icon-size);
+}
+
+.reelsleek-vi-waves {
+  opacity: 1;
+  transition: var(--reelsleek-transition-opacity);
+}
+
+.reelsleek-vi-slash {
+  opacity: 0;
+  transition: var(--reelsleek-transition-opacity);
+}
+
+.reelsleek-mute-button.muted .reelsleek-vi-waves {
+  opacity: 0;
+}
+
+.reelsleek-mute-button.muted .reelsleek-vi-slash {
+  opacity: 1;
+}
+
+/* Hide Instagram’s native mute UI when our audio control is present */
+div[data-instancekey],
+div:has(> .reelsleek-audio-control)
+  div[role="group"]
+  div
+  > div[role="button"]:has(> svg),
+div:has(> .reelsleek-audio-control)
+  div[role="group"]
+  div.html-div
+  > button:has(> div > svg) {
+  display: none;
+}

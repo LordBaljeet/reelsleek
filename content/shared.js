@@ -174,7 +174,11 @@ class ToolbarMode {
 }
 
 function attachToolbar(video) {
-  if (!ToolbarMode.isCustom()) return;
+  //do not attach toolbar to reels if not in custom mode
+  if (PageHandler.isReel() && !ToolbarMode.isCustom()) return;
+  //do not attach if its a story
+  if (PageHandler.isStorie()) return;
+  //do not attach toolbar if already present
   if (video.parentElement.querySelector(".reelsleek-toolbar")) return;
 
   const logoUrl = browser.runtime.getURL("icons/logo-no-bg.png");
@@ -256,4 +260,21 @@ class PageHandler {
     );
     return match ? match[1] : null;
   }
+}
+
+const getToolbar = (video) => {
+  if(PageHandler.isReel()) {
+    const parent = video.closest('[style*="--x-width"]');
+    if (!parent) return null;
+    const toolbar = parent.nextElementSibling;
+    if (!toolbar) return null;
+    return toolbar;
+  }
+
+  if (PageHandler.isFeed()) {
+    const article = video.closest('article');
+    if (!article) return null;
+    return article.querySelector('section > div') || null;
+  }
+  return null;
 }

@@ -8,7 +8,7 @@ class SeekbarModule {
 
     this.container = document.createElement("div");
     this.container.className = "reelsleek-video-control";
-    
+
     if (templateElement) {
       const clone = document.importNode(templateElement.content, true);
       this.container.appendChild(clone);
@@ -26,14 +26,14 @@ class SeekbarModule {
     this.container.addEventListener("mousemove", (e) => this.#handleTooltipMove(e));
     this.seekbar.addEventListener("mousedown", () => { this.isSeeking = true; this.fillEl.style.transition = 'none'; });
     this.seekbar.addEventListener("touchstart", () => { this.isSeeking = true; this.fillEl.style.transition = 'none'; });
-    
-    this.seekbar.addEventListener("mouseup", () => { 
-      this.isSeeking = false; 
-      if (!this.video.paused) this.syncPlay(); 
+
+    this.seekbar.addEventListener("mouseup", () => {
+      this.isSeeking = false;
+      if (!this.video.paused) this.syncPlay();
     });
-    this.seekbar.addEventListener("touchend", () => { 
-      this.isSeeking = false; 
-      if (!this.video.paused) this.syncPlay(); 
+    this.seekbar.addEventListener("touchend", () => {
+      this.isSeeking = false;
+      if (!this.video.paused) this.syncPlay();
     });
 
     this.seekbar.addEventListener("input", (e) => this.#handleInputChange(e));
@@ -60,10 +60,10 @@ class SeekbarModule {
   #handleInputChange(e) {
     e.stopPropagation();
     if (!isFinite(this.video.duration)) return;
-    
+
     const progress = this.seekbar.value / 100;
     this.video.currentTime = this.video.duration * progress;
-    
+
     this.fillEl.style.transition = 'none';
     this.fillEl.style.transform = `scaleX(${progress})`;
   }
@@ -129,21 +129,19 @@ class FullscreenModule {
   #buildUI(templateElement) {
     if (!templateElement) return;
 
-    if (ToolbarMode.isCustom()) {
-      const toolbarContainer = this.video.parentElement.querySelector('.reelsleek-toolbar-container');
-      if (toolbarContainer) {
-        const clone = document.importNode(templateElement.content, true);
-        toolbarContainer.appendChild(clone);
-        this.button = toolbarContainer.querySelector('.reelsleek-fullscreen-button');
-        this.button.addEventListener('click', this.#handleButtonClick);
-      }
+    const toolbarContainer = this.video.parentElement.querySelector('.reelsleek-toolbar-container');
+    if (toolbarContainer) {
+      const clone = document.importNode(templateElement.content, true);
+      toolbarContainer.appendChild(clone);
+      this.button = toolbarContainer.querySelector('.reelsleek-fullscreen-button');
+      this.button.addEventListener('click', this.#handleButtonClick);
     } else {
       this.container = document.createElement("div");
       this.container.className = "reelsleek-fullscreen-container";
-      
+
       const clone = document.importNode(templateElement.content, true);
       this.container.appendChild(clone);
-      
+
       this.button = this.container.querySelector("button");
       this.button.addEventListener("click", this.#handleButtonClick);
 
@@ -174,7 +172,7 @@ class PlayOverlayModule {
 
     this.container = document.createElement("div");
     this.container.className = 'reelsleek-play-container';
-    
+
     if (templateElement) {
       const clone = document.importNode(templateElement.content, true);
       this.container.appendChild(clone);
@@ -326,7 +324,7 @@ class VideoControl {
     const playListener = () => {
       seekbar.setUiPaused(false);
       playOverlay.setUiPaused(false);
-      
+
       let targetVideo = video;
       if (this.fullscreenOn && video != this.currentlyPlayingVideo) {
         video.pause();

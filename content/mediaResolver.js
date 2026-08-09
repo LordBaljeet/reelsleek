@@ -1,56 +1,27 @@
 /**
- * MEDIA RESOLUTION — Optimized for speed with priority on cache.
+ * MEDIA RESOLUTION
  *
- * Resolution order for a given <video>:
- *   1. Passive JSON cache — filled by networkInterceptor.js sniffing the
- *      page's own network responses as they fly by (fast path, no extra
- *      network calls).
- *   2. Active fetch — the post's embed page, then (if that fails) a
- *      streaming fetch of the full permalink page, scanning for an
- *      embedded .mp4 URL.
- *   3. GraphQL — a direct query against Instagram's API, trying each known
- *      doc_id in turn (Instagram rotates these periodically, so a single
- *      hardcoded id is not reliable on its own).
+ * Resolves an Instagram <video> element to a direct CDN .mp4 URL on demand
+ * (click). No passive cache, no pre-warming — keeps memory flat.
  *
- * There used to be a 4th, last-resort step that captured raw bytes out of
- * the MediaSource/SourceBuffer the page uses for blob: playback. It's been
- * removed — in practice steps 1-3 have resolved every video in testing, and
- * the capture path kept every scrolled-past reel's full byte buffer alive
- * in memory for the rest of the page's life. `resolve()` now always
- * returns either a CDN URL string or `null`.
+ * Strategy:
+ *   1. Extract shortcode from the video’s surrounding DOM (or page URL).
+ *   2. Convert shortcode → numeric media id.
+ *   3. GET /api/v1/media/{id}/info/ and pick the best video_versions entry.
+ *
+ * Returns a CDN URL string, or null on failure.
  */
 class MediaResolver {
-  static #JsonSource = "reelsleek-network";
-  static #maxEntries = 50;
-
-  // CDN URLs returned by Instagram are signed with time-limited query
-  // params. A cache entry that outlives that signature would be served as
-  // a "hit" but fail to actually download, so cache entries expire instead
-  // of only being evicted by count.
-  static #CACHE_TTL_MS = 5 * 60 * 1000;
-
   static #DEBUG = true;
 
-  /** @type {Map<string, {url: string, expiresAt: number}>} */
-  static #jsonCache = new Map();
-  /** @type {string[]} */
-  static #jsonOrder = [];
+  /** @type {Map<string, Promise<string|null>>} */
+  static #inFlight = new Map();
 
-  /** @type {Map<string, Promise>} */
-  static #activeResolutions = new Map();
+  static #SHORTCODE_ALPHABET =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
-  // Pre-warm cache: track which videos we're already resolving
-  static #pendingResolutions = new WeakMap();
-
-  // Instagram rotates the doc_id used for the shortcode_media GraphQL
-  // query from time to time. Try each of these in order rather than
-  // hardcoding a single one, so an old id going stale doesn't take the
-  // whole GraphQL fallback down with it.
-  static #GRAPHQL_DOC_IDS = [
-    "27128499623469141",
-    "10015901848480474",
-    "8845758582119845",
-  ];
+  static #SHORTCODE_LINK_SELECTOR =
+    'a[href*="/reel/"], a[href*="/reels/"], a[href*="/p/"], a[href*="/tv/"], a[data-reelsleek-original-href]';
 
   static #log(...args) {
     if (MediaResolver.#DEBUG) console.log("[MediaResolver]", ...args);
@@ -60,56 +31,10 @@ class MediaResolver {
     console.warn("[MediaResolver]", ...args);
   }
 
-  static setup() {
-    window.addEventListener("message", (event) => {
-      if (event.source !== window) return;
-      if (event.data?.source !== MediaResolver.#JsonSource) return;
+  // Kept as a no-op so existing callers (e.g. content bootstrap) don’t break.
+  static setup() {}
 
-      for (const entry of event.data.urls ?? []) {
-        if (!entry?.url || entry.id == null) continue;
-        MediaResolver.#rememberJson(String(entry.id), entry.url);
-      }
-    });
-  }
-
-  static #rememberJson(id, url) {
-    if (!MediaResolver.#jsonCache.has(id)) {
-      MediaResolver.#jsonOrder.push(id);
-      if (MediaResolver.#jsonOrder.length > MediaResolver.#maxEntries) {
-        MediaResolver.#jsonCache.delete(MediaResolver.#jsonOrder.shift());
-      }
-    }
-    MediaResolver.#jsonCache.set(id, {
-      url,
-      expiresAt: Date.now() + MediaResolver.#CACHE_TTL_MS,
-    });
-  }
-
-  /**
-   * Returns a still-valid cached URL for the given id, or null if there's
-   * no entry or it has expired (expired entries are dropped immediately so
-   * they don't linger and count against #maxEntries).
-   */
-  static #getCached(id) {
-    if (!id) return null;
-    const entry = MediaResolver.#jsonCache.get(id);
-    if (!entry) return null;
-    if (Date.now() > entry.expiresAt) {
-      MediaResolver.#jsonCache.delete(id);
-      return null;
-    }
-    return entry.url;
-  }
-
-  static #getOgVideoUrl(doc = document) {
-    const meta = doc.querySelector(
-      'meta[property="og:video:secure_url"], meta[property="og:video"]',
-    );
-    return meta?.content || meta?.getAttribute("content") || null;
-  }
-
-  static #SHORTCODE_LINK_SELECTOR =
-    'a[href*="/reel/"], a[href*="/reels/"], a[href*="/p/"], a[href*="/tv/"], a[data-reelsleek-original-href]';
+  // ─── shortcode ─────────────────────────────────────────────────────────
 
   static #extractShortcodeFromHref(href) {
     if (!href) return null;
@@ -117,8 +42,12 @@ class MediaResolver {
     return match ? match[1] : null;
   }
 
+  /**
+   * @param {HTMLVideoElement} video
+   * @returns {string|null}
+   */
   static #getShortcodeForVideo(video) {
-    let link = video.closest(MediaResolver.#SHORTCODE_LINK_SELECTOR);
+    const link = video.closest(MediaResolver.#SHORTCODE_LINK_SELECTOR);
     if (link) {
       const sc = MediaResolver.#extractShortcodeFromHref(
         link.dataset.reelsleekOriginalHref || link.getAttribute("href"),
@@ -130,10 +59,9 @@ class MediaResolver {
       'article, [role="article"], [role="presentation"], div[class*="x1lliihq"], div[class*="x1n2onr6"]',
     );
     if (container) {
-      const candidates = [
-        ...container.querySelectorAll(MediaResolver.#SHORTCODE_LINK_SELECTOR),
-      ];
-      for (const a of candidates) {
+      for (const a of container.querySelectorAll(
+        MediaResolver.#SHORTCODE_LINK_SELECTOR,
+      )) {
         const sc = MediaResolver.#extractShortcodeFromHref(
           a.dataset.reelsleekOriginalHref || a.getAttribute("href"),
         );
@@ -143,10 +71,10 @@ class MediaResolver {
 
     let el = video.parentElement;
     for (let i = 0; i < 8 && el; i++) {
-      link = el.querySelector?.(MediaResolver.#SHORTCODE_LINK_SELECTOR);
-      if (link) {
+      const near = el.querySelector?.(MediaResolver.#SHORTCODE_LINK_SELECTOR);
+      if (near) {
         const sc = MediaResolver.#extractShortcodeFromHref(
-          link.dataset.reelsleekOriginalHref || link.getAttribute("href"),
+          near.dataset.reelsleekOriginalHref || near.getAttribute("href"),
         );
         if (sc) return sc;
       }
@@ -156,489 +84,184 @@ class MediaResolver {
     return null;
   }
 
+  /**
+   * @param {HTMLVideoElement} video
+   * @returns {string|null}
+   */
   static getShortcode(video) {
     return (
       MediaResolver.#getShortcodeForVideo(video) ?? PageHandler.getShortcode()
     );
   }
 
-  static #waitForJsonCache(shortcode, timeoutMs) {
-    if (!shortcode) return Promise.resolve(null);
-    const cached = MediaResolver.#getCached(shortcode);
-    if (cached) return Promise.resolve(cached);
+  // ─── media-info helpers ────────────────────────────────────────────────
 
-    return new Promise((resolve) => {
-      const start = Date.now();
-      const interval = setInterval(() => {
-        const url = MediaResolver.#getCached(shortcode);
-        if (url) {
-          clearInterval(interval);
-          resolve(url);
-        } else if (Date.now() - start > timeoutMs) {
-          clearInterval(interval);
-          resolve(null);
-        }
-      }, 60);
-    });
+  /**
+   * @param {string} shortcode
+   * @returns {string|null}
+   */
+  static #shortcodeToMediaId(shortcode) {
+    if (!shortcode) return null;
+    try {
+      let id = 0n;
+      for (const char of shortcode) {
+        const idx = MediaResolver.#SHORTCODE_ALPHABET.indexOf(char);
+        if (idx === -1) return null;
+        id = id * 64n + BigInt(idx);
+      }
+      return id.toString(10);
+    } catch {
+      return null;
+    }
   }
 
-  static #extractVideoUrlFromGraphql(json) {
-    if (!json || typeof json !== "object") return null;
+  static #getWwwClaim() {
+    return (
+      sessionStorage.getItem("www-claim-v2") ||
+      document.cookie.match(/ig_www_claim=([^;]+)/)?.[1] ||
+      "0"
+    );
+  }
 
-    const bestFromVersions = (versions) => {
-      if (!Array.isArray(versions) || !versions.length) return null;
-      const sorted = [...versions].sort(
-        (a, b) =>
-          (b.width || 0) * (b.height || 0) - (a.width || 0) * (a.height || 0),
-      );
-      return sorted[0]?.url || null;
-    };
+  /**
+   * @param {Array<{url?: string, width?: number, height?: number}>|null|undefined} versions
+   * @returns {string|null}
+   */
+  static #bestVideoUrl(versions) {
+    if (!Array.isArray(versions) || !versions.length) return null;
+    const best = [...versions].sort(
+      (a, b) =>
+        (b.width || 0) * (b.height || 0) - (a.width || 0) * (a.height || 0),
+    )[0];
+    return best?.url || null;
+  }
 
-    // Check for media object first (most common)
-    const media =
-      json?.data?.xdt_shortcode_media || json?.data?.shortcode_media;
-    if (media) {
-      if (typeof media.video_url === "string" && media.video_url) {
-        return media.video_url;
-      }
-      const fromVersions = bestFromVersions(media.video_versions);
-      if (fromVersions) return fromVersions;
-
-      const edges = media.edge_sidecar_to_children?.edges;
-      if (Array.isArray(edges)) {
-        for (const edge of edges) {
-          const node = edge?.node;
-          if (!node) continue;
-          if (typeof node.video_url === "string" && node.video_url) {
-            return node.video_url;
-          }
-          const v = bestFromVersions(node.video_versions);
-          if (v) return v;
-        }
-      }
+  /**
+   * @param {string} shortcode
+   * @returns {Promise<string|null>}
+   */
+  static async #fetchFromMediaInfoApi(shortcode) {
+    const mediaId = MediaResolver.#shortcodeToMediaId(shortcode);
+    if (!mediaId) {
+      MediaResolver.#warn("bad shortcode → id", shortcode);
+      return null;
     }
 
-    // Polaris shape
-    const items = json?.data?.xdt_api__v1__media__shortcode__web_info?.items;
-    const item = Array.isArray(items) ? items[0] : null;
-    if (item) {
-      const fromVersions = bestFromVersions(item.video_versions);
-      if (fromVersions) return fromVersions;
+    const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+    const headers = {
+      Accept: "*/*",
+      "X-CSRFToken": csrf,
+      "X-IG-App-ID": "936619743392459",
+      "X-IG-WWW-Claim": MediaResolver.#getWwwClaim(),
+      "X-Requested-With": "XMLHttpRequest",
+      Referer: location.href,
+    };
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      try {
+        const w = Math.round(screen.width * (devicePixelRatio || 1));
+        const h = Math.round(screen.height * (devicePixelRatio || 1));
+        document.cookie = `wd=${w}x${h}; path=/; SameSite=None; Secure`;
+        document.cookie = `dpr=${devicePixelRatio || 2}; path=/; SameSite=None; Secure`;
+      } catch {
+        /* ignore */
+      }
+
+      const response = await fetch(
+        `https://www.instagram.com/api/v1/media/${mediaId}/info/`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers,
+          signal: controller.signal,
+        },
+      );
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        MediaResolver.#warn(
+          `HTTP ${response.status} for ${shortcode} (id=${mediaId})`,
+        );
+        return null;
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("json")) {
+        const text = await response.text();
+        MediaResolver.#warn("non-JSON body", text.slice(0, 120));
+        return null;
+      }
+
+      const json = await response.json();
+      const item = json?.items?.[0];
+      if (!item) {
+        MediaResolver.#warn("empty items", shortcode);
+        return null;
+      }
+
+      const fromVersions = MediaResolver.#bestVideoUrl(item.video_versions);
+      if (fromVersions) {
+        MediaResolver.#log("✓ media-info", shortcode);
+        return fromVersions;
+      }
+
       if (typeof item.video_url === "string" && item.video_url) {
+        MediaResolver.#log("✓ media-info (video_url)", shortcode);
         return item.video_url;
       }
 
       if (Array.isArray(item.carousel_media)) {
         for (const slide of item.carousel_media) {
-          const v = bestFromVersions(slide.video_versions);
-          if (v) return v;
-          if (typeof slide.video_url === "string" && slide.video_url) {
-            return slide.video_url;
+          const url =
+            MediaResolver.#bestVideoUrl(slide.video_versions) ||
+            (typeof slide.video_url === "string" ? slide.video_url : null);
+          if (url) {
+            MediaResolver.#log("✓ media-info (carousel)", shortcode);
+            return url;
           }
         }
       }
-    }
 
-    // Recursive walk as last resort
-    const seen = new Set();
-    const walk = (node, depth) => {
-      if (!node || typeof node !== "object" || depth > 12 || seen.has(node))
-        return null;
-      seen.add(node);
-
-      if (
-        (typeof node.video_url === "string" &&
-          node.video_url.includes("cdninstagram")) ||
-        (typeof node.video_url === "string" && node.video_url.includes("fbcdn"))
-      ) {
-        return node.video_url;
-      }
-      if (Array.isArray(node.video_versions)) {
-        const v = bestFromVersions(node.video_versions);
-        if (v) return v;
-      }
-
-      for (const key of Object.keys(node)) {
-        const found = walk(node[key], depth + 1);
-        if (found) return found;
-      }
-      return null;
-    };
-
-    return walk(json, 0);
-  }
-
-  static #cleanUrl(raw) {
-    return raw
-      .replace(/\\\//g, "/")
-      .replace(/\\u0026/g, "&")
-      .replace(/&amp;/g, "&");
-  }
-
-  static #collectMp4Candidates(text) {
-    const candidates = [];
-
-    const urlRegex =
-      /"url"\s*:\s*"(https:\\\/\\\/[^"]+?\.mp4[^"]*|https:\/\/[^"]+?\.mp4[^"]*)"/gi;
-    let match;
-    while ((match = urlRegex.exec(text)) !== null) {
-      candidates.push(MediaResolver.#cleanUrl(match[1]));
-    }
-
-    const broadRegex =
-      /https:\\?\/\\?\/[^"'\s<>]+?(?:cdninstagram|fbcdn)\.net\/[^"'\s<>]+?\.mp4[^"'\s<>]*/gi;
-    const broadMatches = text.match(broadRegex);
-    if (broadMatches?.length) {
-      candidates.push(...broadMatches.map(MediaResolver.#cleanUrl));
-    }
-
-    const vvIdx = text.indexOf("video_versions");
-    if (vvIdx !== -1) {
-      const slice = text.slice(vvIdx, vvIdx + 2500);
-      const m = slice.match(/https:\\?\/\\?\/[^"'\s]+?\.mp4[^"'\s]*/i);
-      if (m) candidates.push(MediaResolver.#cleanUrl(m[0]));
-    }
-
-    return candidates.sort((a, b) => b.length - a.length);
-  }
-
-  static #findShortcodeAnchors(text, shortcode) {
-    if (!shortcode) return [];
-    const escaped = shortcode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const anchorRegex = new RegExp(
-      `"(?:code|shortcode)"\\s*:\\s*"${escaped}"`,
-      "g",
-    );
-    const offsets = [];
-    let match;
-    while ((match = anchorRegex.exec(text)) !== null) {
-      offsets.push(match.index);
-    }
-    return offsets;
-  }
-
-  static #extractMp4FromHtml(html, shortcode = null) {
-    const anchors = MediaResolver.#findShortcodeAnchors(html, shortcode);
-
-    if (anchors.length) {
-      const WINDOW = 6000;
-      for (const offset of anchors) {
-        const start = Math.max(0, offset - WINDOW);
-        const end = Math.min(html.length, offset + WINDOW);
-        const windowCandidates = MediaResolver.#collectMp4Candidates(
-          html.slice(start, end),
-        );
-        if (windowCandidates.length) return windowCandidates[0];
-      }
-      return null;
-    }
-
-    return null;
-  }
-
-  static #extractMp4FromHtmlUnanchored(html) {
-    const candidates = MediaResolver.#collectMp4Candidates(html);
-    return candidates.length ? candidates[0] : null;
-  }
-
-  /**
-   * Use a HEAD request first to check if the embed page exists, then fetch
-   * only if needed. This saves bandwidth on cache hits.
-   */
-  static async #fetchFromEmbedPage(shortcode) {
-    if (!shortcode) return null;
-    try {
-      const headController = new AbortController();
-      const headTimeout = setTimeout(() => headController.abort(), 2000);
-      const headResponse = await fetch(
-        `https://www.instagram.com/reel/${shortcode}/embed/captioned/`,
-        {
-          method: "HEAD",
-          credentials: "include",
-          signal: headController.signal,
-        },
-      );
-      clearTimeout(headTimeout);
-
-      if (!headResponse.ok) return null;
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3500);
-
-      const response = await fetch(
-        `https://www.instagram.com/reel/${shortcode}/embed/captioned/`,
-        {
-          credentials: "include",
-          headers: { Accept: "text/html,application/xhtml+xml" },
-          signal: controller.signal,
-        },
-      );
-      clearTimeout(timeout);
-
-      if (!response.ok) return null;
-
-      const html = await response.text();
-      let url = MediaResolver.#extractMp4FromHtml(html, shortcode);
-      if (!url) {
-        url = MediaResolver.#extractMp4FromHtmlUnanchored(html);
-      }
-      if (url) {
-        MediaResolver.#rememberJson(shortcode, url);
-        return url;
-      }
+      MediaResolver.#warn("no video in payload", shortcode);
       return null;
     } catch (err) {
-      if (err.name !== "AbortError") {
-        MediaResolver.#warn("embed-fetch exception", err);
-      }
-      return null;
-    }
-  }
-
-  static async #fetchFromFullPageStreaming(shortcode) {
-    if (!shortcode) return null;
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-
-      const response = await fetch(
-        `https://www.instagram.com/reel/${shortcode}/`,
-        {
-          credentials: "include",
-          headers: { Accept: "text/html,application/xhtml+xml" },
-          signal: controller.signal,
-        },
-      );
-
-      if (!response.ok || !response.body) {
-        clearTimeout(timeout);
-        return null;
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const url = MediaResolver.#extractMp4FromHtml(buffer, shortcode);
-        if (url) {
-          clearTimeout(timeout);
-          reader.cancel().catch(() => {});
-          MediaResolver.#rememberJson(shortcode, url);
-          return url;
-        }
-
-        if (buffer.length > 15_000_000) {
-          clearTimeout(timeout);
-          reader.cancel().catch(() => {});
-          return null;
-        }
-      }
-
       clearTimeout(timeout);
-
-      // Last-ditch, low-confidence guess: no shortcode anchor was found in
-      // the HTML, so this just grabs the longest .mp4-looking URL on the
-      // page. It's flagged loudly because — unlike the anchored path above
-      // — there's no guarantee it belongs to the requested post.
-      const fallback = MediaResolver.#extractMp4FromHtmlUnanchored(buffer);
-      if (fallback) {
-        MediaResolver.#warn(
-          "no shortcode anchor found — using unanchored (low-confidence) guess for",
-          shortcode,
-          fallback.slice(0, 100),
-        );
-        MediaResolver.#rememberJson(shortcode, fallback);
-        return fallback;
-      }
-
-      return null;
-    } catch (err) {
       if (err.name !== "AbortError") {
-        MediaResolver.#warn("streaming og-fetch exception", err);
+        MediaResolver.#warn("exception", err);
       }
       return null;
     }
   }
 
-  static async #fetchOgVideoForShortcode(shortcode) {
-    if (!shortcode) return null;
-    const embedUrl = await MediaResolver.#fetchFromEmbedPage(shortcode);
-    if (embedUrl) return embedUrl;
-    return MediaResolver.#fetchFromFullPageStreaming(shortcode);
-  }
+  // ─── public API ────────────────────────────────────────────────────────
 
   /**
-   * Tries each known doc_id in turn and stops at the first one that
-   * resolves a URL. Instagram rotates these periodically — relying on a
-   * single hardcoded id meant this fallback silently stopped working
-   * whenever Instagram rotated it.
-   */
-  static async #fetchGraphqlVideoUrl(shortcode) {
-    if (!shortcode) return null;
-
-    const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
-    const csrf = csrfMatch ? csrfMatch[1] : "";
-
-    for (const docId of MediaResolver.#GRAPHQL_DOC_IDS) {
-      try {
-        const body = new URLSearchParams({
-          variables: JSON.stringify({ shortcode }),
-          doc_id: docId,
-          server_timestamps: "true",
-        });
-
-        const response = await fetch("https://www.instagram.com/api/graphql", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "X-IG-App-ID": "936619743392459",
-            "X-CSRFToken": csrf,
-            "X-Requested-With": "XMLHttpRequest",
-          },
-          body,
-        });
-
-        const text = await response.text();
-        if (!text.trimStart().startsWith("{")) continue;
-
-        const json = JSON.parse(text);
-        const url = MediaResolver.#extractVideoUrlFromGraphql(json);
-        if (url) {
-          MediaResolver.#rememberJson(shortcode, url);
-          MediaResolver.#log(`✓ graphql succeeded with doc_id ${docId}`);
-          return url;
-        }
-      } catch (err) {
-        MediaResolver.#warn(`GraphQL exception with doc_id ${docId}`, err);
-        // Try the next doc_id.
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Pre-warm: start resolving a video's URL proactively. Returns a promise
-   * that resolves when the URL is available, but callers don't need to
-   * await it — it's meant to be fired off ahead of time (e.g. on viewport
-   * entry) so the click handler usually finds an already-resolved result.
-   */
-  static prewarm(video) {
-    if (!video) return Promise.resolve(null);
-
-    const shortcode = MediaResolver.getShortcode(video);
-    if (!shortcode) return Promise.resolve(null);
-
-    const cached = MediaResolver.#getCached(shortcode);
-    if (cached) {
-      MediaResolver.#log("prewarm: already cached", shortcode);
-      return Promise.resolve(cached);
-    }
-
-    if (MediaResolver.#activeResolutions.has(shortcode)) {
-      MediaResolver.#log("prewarm: resolution already in progress", shortcode);
-      return MediaResolver.#activeResolutions.get(shortcode);
-    }
-
-    if (MediaResolver.#pendingResolutions.has(video)) {
-      return MediaResolver.#pendingResolutions.get(video);
-    }
-
-    const promise = MediaResolver.resolve(video)
-      .catch(() => null)
-      .finally(() => {
-        MediaResolver.#pendingResolutions.delete(video);
-      });
-
-    MediaResolver.#pendingResolutions.set(video, promise);
-    return promise;
-  }
-
-  /**
-   * Primary resolve method. Shares in-progress resolutions (keyed by
-   * shortcode, and separately by video element) to avoid duplicate network
-   * requests when multiple callers ask for the same video.
+   * Resolve a video to a CDN URL. Deduplicates concurrent calls for the
+   * same shortcode (e.g. double-click).
    * @param {HTMLVideoElement} video
-   * @returns {Promise<string|null>} the resolved CDN URL, or null.
+   * @returns {Promise<string|null>}
    */
   static async resolve(video) {
     const shortcode = MediaResolver.getShortcode(video);
-    MediaResolver.#log("resolving shortcode =", shortcode);
-
-    if (shortcode && MediaResolver.#activeResolutions.has(shortcode)) {
-      MediaResolver.#log("⏳ reusing in-progress resolution for", shortcode);
-      return MediaResolver.#activeResolutions.get(shortcode);
-    }
-
-    if (MediaResolver.#pendingResolutions.has(video)) {
-      MediaResolver.#log("⏳ video already being resolved");
-      return MediaResolver.#pendingResolutions.get(video);
-    }
-
-    const resolvePromise = MediaResolver.#doResolve(video);
-
-    if (shortcode) {
-      MediaResolver.#activeResolutions.set(shortcode, resolvePromise);
-    }
-    MediaResolver.#pendingResolutions.set(video, resolvePromise);
-    resolvePromise.finally(() => {
-      if (shortcode) MediaResolver.#activeResolutions.delete(shortcode);
-      MediaResolver.#pendingResolutions.delete(video);
-    });
-
-    return resolvePromise;
-  }
-
-  /**
-   * The actual resolution work - separated so we can manage the promise
-   * lifecycle properly. Returns a CDN URL string, or null if every
-   * strategy came up empty.
-   */
-  static async #doResolve(video) {
-    const shortcode = MediaResolver.getShortcode(video);
-    MediaResolver.#log("doResolve shortcode =", shortcode);
+    MediaResolver.#log("resolve", shortcode);
 
     if (!shortcode) {
-      MediaResolver.#warn("no shortcode found for video — cannot resolve");
+      MediaResolver.#warn("no shortcode — cannot resolve");
       return null;
     }
 
-    // STEP 1: passive cache (fast path), filled by networkInterceptor.js
-    // sniffing the page's own JSON responses.
-    const cachedUrl = MediaResolver.#getCached(shortcode);
-    if (cachedUrl) {
-      MediaResolver.#log("⚡ cache hit (fast path)");
-      return cachedUrl;
+    if (MediaResolver.#inFlight.has(shortcode)) {
+      MediaResolver.#log("reusing in-flight request", shortcode);
+      return MediaResolver.#inFlight.get(shortcode);
     }
 
-    const jsonUrl = await MediaResolver.#waitForJsonCache(shortcode, 400);
-    if (jsonUrl) {
-      MediaResolver.#log("⚡ cache filled while waiting");
-      return jsonUrl;
-    }
-    MediaResolver.#log("cache miss, starting active fetch");
-
-    // STEP 2: active fetch (embed page, then full-page streaming).
-    const fetchedUrl = await MediaResolver.#fetchOgVideoForShortcode(shortcode);
-    if (fetchedUrl) {
-      MediaResolver.#log("✓ active fetch succeeded");
-      return fetchedUrl;
-    }
-
-    // STEP 3: GraphQL fallback.
-    const graphqlUrl = await MediaResolver.#fetchGraphqlVideoUrl(shortcode);
-    if (graphqlUrl) {
-      MediaResolver.#log("✓ graphql fallback succeeded");
-      return graphqlUrl;
-    }
-
-    MediaResolver.#warn("✗ no source found for", shortcode);
-    return null;
+    const promise = MediaResolver.#fetchFromMediaInfoApi(shortcode).finally(
+      () => MediaResolver.#inFlight.delete(shortcode),
+    );
+    MediaResolver.#inFlight.set(shortcode, promise);
+    return promise;
   }
 }

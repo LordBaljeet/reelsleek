@@ -40,18 +40,18 @@ browser.runtime.onMessage.addListener((msg) => {
       ToolbarMode.setMode(msg.value);
       const videos = getCleanVideos();
       videos.forEach((v) => {
-        AutoScroll.detach(v);
-        TheaterMode.detach(v);
         VideoControl.detach(v);
-        Rotate.detach(v);
         Download.detach(v);
+        TheaterMode.detach(v);
+        Rotate.detach(v);
+        AutoScroll.detach(v);
         v.parentElement.querySelector(".reelsleek-toolbar")?.remove();
         attachToolbar(v);
         VideoControl.attach(v);
-        AutoScroll.attach(v);
+        Download.attach(v);
         TheaterMode.attach(v);
         Rotate.attach(v);
-        Download.attach(v);
+        AutoScroll.attach(v);
       });
       return Promise.resolve({ ok: true });
     }
@@ -61,18 +61,18 @@ browser.runtime.onMessage.addListener((msg) => {
       videos.forEach((v) => {
         AudioControl.detach(v);
         VideoControl.detach(v);
-        TheaterMode.detach(v);
-        AutoScroll.detach(v);
-        Rotate.detach(v);
         Download.detach(v);
+        TheaterMode.detach(v);
+        Rotate.detach(v);
+        AutoScroll.detach(v);
       });
       videos.forEach((v) => {
         AudioControl.attach(v);
         VideoControl.attach(v);
-        AutoScroll.attach(v);
+        Download.attach(v);
         TheaterMode.attach(v);
         Rotate.attach(v);
-        Download.attach(v);
+        AutoScroll.attach(v);
       });
       return Promise.resolve({ ok: true });
     }

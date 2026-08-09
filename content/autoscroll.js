@@ -43,9 +43,7 @@ class AutoScrollModule {
       if (!toolbarContainer || toolbarContainer.querySelector('.reelsleek-autoscroll')) return;
       toolbarContainer.appendChild(fragment);
     } else {
-      const parent = this.video.closest('[style*="--x-width"]');
-      if (!parent) return;
-      const toolbar = parent.nextElementSibling;
+      const toolbar = getToolbar(this.video);
       if (!toolbar || toolbar.querySelector('.reelsleek-autoscroll')) return;
       const children = [...toolbar.children];
       toolbar.insertBefore(fragment, children[children.length - 2]);
@@ -150,7 +148,7 @@ class AutoScroll {
     try {
       const nextButton = document.querySelectorAll('div[role="toolbar"] div[role="button"]')[1];
       nextButton?.click();
-    } catch { 
+    } catch {
       console.debug('[Autoscroll] failed to autoscroll');
     }
   }
