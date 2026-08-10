@@ -126,6 +126,7 @@ class PopupController {
 
     // Controls tab (behavior toggles)
     this.dblClickFsToggle = document.getElementById("dblClickFsToggle");
+    this.downloadFolderToggle = document.getElementById("downloadFolderToggle");
     this.theaterFeatureToggle = document.getElementById("theaterFeatureToggle");
     this.autoscrollFeatureToggle = document.getElementById("autoscrollFeatureToggle");
     this.downloadFeatureToggle = document.getElementById("downloadFeatureToggle");
@@ -204,6 +205,7 @@ class PopupController {
 
     // Controls tab switches
     this.#setupSwitch(this.dblClickFsToggle, "setDoubleClickFullscreen");
+    this.#setupSwitch(this.downloadFolderToggle, "setDownloadSaveToFolder");
     this.#setupSwitch(this.theaterFeatureToggle, "setTheaterModeFeatureEnabled");
     this.#setupSwitch(this.autoscrollFeatureToggle, "setAutoscrollFeatureEnabled");
     this.#setupSwitch(this.downloadFeatureToggle, "setDownloadFeatureEnabled");
@@ -437,6 +439,7 @@ class PopupController {
 
     // Update behavior switches
     this.dblClickFsToggle.checked = response.doubleClickFullscreenEnabled ?? true;
+    this.downloadFolderToggle.checked = response.downloadSaveToFolder ?? true;
     this.theaterFeatureToggle.checked = response.theaterModeFeatureEnabled ?? true;
     this.autoscrollFeatureToggle.checked = response.autoscrollFeatureEnabled ?? true;
     this.downloadFeatureToggle.checked = response.downloadFeatureEnabled ?? true;

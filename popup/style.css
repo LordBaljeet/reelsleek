@@ -348,6 +348,7 @@ header {
    Switch Toggle (Controls tab)
    ═══════════════════════════════════════════════════════════ */
 .switch-row {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;

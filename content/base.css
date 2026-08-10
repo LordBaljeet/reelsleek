@@ -489,20 +489,8 @@ div:has(> div > video):fullscreen .reelsleek-collapse-icon {
   flex-shrink: 0;
 }
 
-body.theater-mode-active div[role="tablist"],
-body.theater-mode-active
-  div[tabindex="-1"]:has(
-    div > div > div > [data-visualcompletion="ignore-dynamic"]
-  ),
-body.theater-mode-active div[class=""] > div > div.html-div {
+body.theater-mode-active div[tabindex="-1"] > div[data-visualcompletion="ignore-dynamic"] {
   display: none;
-}
-
-:fullscreen dialog,
-:fullscreen [role="dialog"],
-:fullscreen div:has(> div > div > [role="dialog"]),
-:fullscreen .modal {
-  z-index: 2147483647;
 }
 
 /* ── Rotate ─────────────────────────────────────────────────────────────── */

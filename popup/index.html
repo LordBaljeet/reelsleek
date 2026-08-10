@@ -33,7 +33,11 @@
 
         <div class="container" id="container">
             <nav class="tabs" id="tabs">
-                <button class="tab-btn active" data-tab="appearance" type="button">
+                <button
+                    class="tab-btn active"
+                    data-tab="appearance"
+                    type="button"
+                >
                     Appearance
                 </button>
                 <button class="tab-btn" data-tab="controls" type="button">
@@ -166,18 +170,21 @@
                                     <line x1="12" y1="8" x2="12.01" y2="8" />
                                 </svg>
                                 <span class="tooltip-bubble" role="tooltip">
-                                    Only changes how videos look on your home feed.
+                                    Only changes how videos look on your home
+                                    feed.
                                     <br /><br />
-                                    <strong>Off</strong> — videos look exactly like
-                                    normal Instagram. <br /><br />
-                                    <strong>On</strong> — videos show in full with
-                                    nothing cropped off, and a soft blurred glow
-                                    fills in the empty space around them.
+                                    <strong>Off</strong> — videos look exactly
+                                    like normal Instagram. <br /><br />
+                                    <strong>On</strong> — videos show in full
+                                    with nothing cropped off, and a soft blurred
+                                    glow fills in the empty space around them.
                                 </span>
                             </span>
                         </span>
                         <div class="vis-toggle" id="ambientModeToggle">
-                            <button class="vis-btn active" data-vis="on">On</button>
+                            <button class="vis-btn active" data-vis="on">
+                                On
+                            </button>
                             <button class="vis-btn" data-vis="off">Off</button>
                         </div>
                     </div>
@@ -248,10 +255,76 @@
                     <div class="switch-row">
                         <span class="label-with-tip">
                             Double-click to fullscreen
+                            <span class="info-icon" tabindex="0">
+                                <svg
+                                    width="11"
+                                    height="11"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="16" x2="12" y2="11" />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                                <span class="tooltip-bubble" role="tooltip">
+                                    When on, double-clicking a video toggles
+                                    fullscreen.
+                                </span>
+                            </span>
                         </span>
                         <label class="switch">
-                            <input type="checkbox" id="dblClickFsToggle" checked />
-                            <span class="switch-track"><span class="switch-thumb"></span></span>
+                            <input
+                                type="checkbox"
+                                id="dblClickFsToggle"
+                                checked
+                            />
+                            <span class="switch-track"
+                                ><span class="switch-thumb"></span
+                            ></span>
+                        </label>
+                    </div>
+
+                    <div class="switch-row">
+                        <span class="label-with-tip">
+                            Save to ReelSleek folder
+                            <span class="info-icon" tabindex="0">
+                                <svg
+                                    width="11"
+                                    height="11"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="16" x2="12" y2="11" />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                                <span class="tooltip-bubble" role="tooltip">
+                                    On — downloaded videos go into a "reelsleek"
+                                    subfolder inside your downloads, keeping
+                                    them separate from everything else.
+                                    <br /><br />
+                                    Off — they download straight into your
+                                    regular downloads folder.
+                                </span>
+                            </span>
+                        </span>
+                        <label class="switch">
+                            <input
+                                type="checkbox"
+                                id="downloadFolderToggle"
+                                checked
+                            />
+                            <span class="switch-track"
+                                ><span class="switch-thumb"></span
+                            ></span>
                         </label>
                     </div>
 
@@ -259,7 +332,7 @@
 
                     <p class="section-label">Features</p>
                     <p class="hint-text feature-hint">
-                        Turn off anything you don't use. This removes it
+                        Turn off anything you don't use — this removes it
                         entirely, buttons and shortcuts included. Drag to
                         reorder.
                     </p>
@@ -267,7 +340,12 @@
                     <div class="feature-list" id="featureList">
                         <div class="feature-row" data-feature="theater">
                             <span class="drag-handle" aria-hidden="true">
-                                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                <svg
+                                    width="10"
+                                    height="16"
+                                    viewBox="0 0 10 16"
+                                    fill="currentColor"
+                                >
                                     <circle cx="2" cy="2" r="1.4" />
                                     <circle cx="8" cy="2" r="1.4" />
                                     <circle cx="2" cy="8" r="1.4" />
@@ -278,14 +356,25 @@
                             </span>
                             <span class="feature-label">Theater mode</span>
                             <label class="switch">
-                                <input type="checkbox" id="theaterFeatureToggle" checked />
-                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                <input
+                                    type="checkbox"
+                                    id="theaterFeatureToggle"
+                                    checked
+                                />
+                                <span class="switch-track"
+                                    ><span class="switch-thumb"></span
+                                ></span>
                             </label>
                         </div>
 
                         <div class="feature-row" data-feature="autoscroll">
                             <span class="drag-handle" aria-hidden="true">
-                                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                <svg
+                                    width="10"
+                                    height="16"
+                                    viewBox="0 0 10 16"
+                                    fill="currentColor"
+                                >
                                     <circle cx="2" cy="2" r="1.4" />
                                     <circle cx="8" cy="2" r="1.4" />
                                     <circle cx="2" cy="8" r="1.4" />
@@ -296,14 +385,25 @@
                             </span>
                             <span class="feature-label">Autoscroll</span>
                             <label class="switch">
-                                <input type="checkbox" id="autoscrollFeatureToggle" checked />
-                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                <input
+                                    type="checkbox"
+                                    id="autoscrollFeatureToggle"
+                                    checked
+                                />
+                                <span class="switch-track"
+                                    ><span class="switch-thumb"></span
+                                ></span>
                             </label>
                         </div>
 
                         <div class="feature-row" data-feature="download">
                             <span class="drag-handle" aria-hidden="true">
-                                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                <svg
+                                    width="10"
+                                    height="16"
+                                    viewBox="0 0 10 16"
+                                    fill="currentColor"
+                                >
                                     <circle cx="2" cy="2" r="1.4" />
                                     <circle cx="8" cy="2" r="1.4" />
                                     <circle cx="2" cy="8" r="1.4" />
@@ -314,14 +414,25 @@
                             </span>
                             <span class="feature-label">Download</span>
                             <label class="switch">
-                                <input type="checkbox" id="downloadFeatureToggle" checked />
-                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                <input
+                                    type="checkbox"
+                                    id="downloadFeatureToggle"
+                                    checked
+                                />
+                                <span class="switch-track"
+                                    ><span class="switch-thumb"></span
+                                ></span>
                             </label>
                         </div>
 
                         <div class="feature-row" data-feature="rotate">
                             <span class="drag-handle" aria-hidden="true">
-                                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                <svg
+                                    width="10"
+                                    height="16"
+                                    viewBox="0 0 10 16"
+                                    fill="currentColor"
+                                >
                                     <circle cx="2" cy="2" r="1.4" />
                                     <circle cx="8" cy="2" r="1.4" />
                                     <circle cx="2" cy="8" r="1.4" />
@@ -332,8 +443,14 @@
                             </span>
                             <span class="feature-label">Rotate</span>
                             <label class="switch">
-                                <input type="checkbox" id="rotateFeatureToggle" checked />
-                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                <input
+                                    type="checkbox"
+                                    id="rotateFeatureToggle"
+                                    checked
+                                />
+                                <span class="switch-track"
+                                    ><span class="switch-thumb"></span
+                                ></span>
                             </label>
                         </div>
                     </div>
@@ -351,7 +468,11 @@
                 <section class="tab-panel" data-panel="keybinds">
                     <div id="keybindGroups"></div>
 
-                    <button class="reload-btn" id="resetKeybindsBtn" type="button">
+                    <button
+                        class="reload-btn"
+                        id="resetKeybindsBtn"
+                        type="button"
+                    >
                         <svg
                             width="13"
                             height="13"
@@ -383,6 +504,7 @@
             </div>
         </div>
 
+        <script src="../compat.js"></script>
         <script src="../keyLabels.js"></script>
         <script src="script.js"></script>
     </body>

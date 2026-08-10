@@ -17,6 +17,7 @@ browser.runtime.onMessage.addListener((msg) => {
         autoscrollFeatureEnabled: AutoScroll.featureEnabled,
         downloadFeatureEnabled: Download.featureEnabled,
         rotateFeatureEnabled: Rotate.featureEnabled,
+        downloadSaveToFolder: Download.saveToFolder,
         featureOrder: FeatureOrder.order,
       });
 
@@ -38,6 +39,10 @@ browser.runtime.onMessage.addListener((msg) => {
 
     case "setDoubleClickFullscreen":
       VideoControl.setDoubleClickFullscreenEnabled(msg.value);
+      return Promise.resolve({ ok: true });
+
+    case "setDownloadSaveToFolder":
+      Download.setSaveToFolder(msg.value);
       return Promise.resolve({ ok: true });
 
     case "setAmbientMode":

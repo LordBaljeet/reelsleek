@@ -122,7 +122,11 @@ class Download {
   /** @type {boolean} Whether the download feature is present/usable at all */
   static featureEnabled = true;
 
+  /** @type {boolean} Whether downloads are organized into a "reelsleek" subfolder */
+  static saveToFolder = true;
+
   static #StorageKey = "reelsleek-download-feature-enabled";
+  static #SaveToFolderStorageKey = "reelsleek-download-save-to-folder";
 
   /**
    * Enables or disables the download feature itself (present/usable).
@@ -138,6 +142,18 @@ class Download {
     } else {
       getCleanVideos().forEach((video) => Download.detach(video));
     }
+  }
+
+  /**
+   * Toggles whether downloaded videos are placed in a "reelsleek" subfolder
+   * inside the browser's default downloads location, vs. straight into it.
+   * @param {boolean} enabled
+   */
+  static setSaveToFolder(enabled) {
+    Download.saveToFolder = enabled;
+    browser.storage.local.set({
+      [Download.#SaveToFolderStorageKey]: enabled,
+    });
   }
 
   static #attachKeybinds() {
@@ -175,8 +191,12 @@ class Download {
   }
 
   static async setup() {
-    const result = await browser.storage.local.get([Download.#StorageKey]);
+    const result = await browser.storage.local.get([
+      Download.#StorageKey,
+      Download.#SaveToFolderStorageKey,
+    ]);
     Download.featureEnabled = result[Download.#StorageKey] ?? Download.featureEnabled;
+    Download.saveToFolder = result[Download.#SaveToFolderStorageKey] ?? Download.saveToFolder;
 
     await Download.#loadExternalTemplates();
     Download.#attachKeybinds();
@@ -189,7 +209,9 @@ class Download {
   static buildFilename(video) {
     const shortcode =
       MediaResolver.getShortcode(video) ?? `video-${Date.now()}`;
-    return `reelsleek/${shortcode}.mp4`;
+    return Download.saveToFolder
+      ? `reelsleek/${shortcode}.mp4`
+      : `${shortcode}.mp4`;
   }
 
   static attach(video) {
