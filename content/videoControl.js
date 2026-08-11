@@ -13,7 +13,10 @@ class SeekbarModule {
       const clone = document.importNode(templateElement.content, true);
       this.container.appendChild(clone);
     }
-    this.video.parentElement.append(this.container);
+    // Only inject button if video is not in upload modal.
+    if (video.parentElement.style.transform == "") {
+      this.video.parentElement.append(this.container);
+    }
 
     this.seekbar = this.container.querySelector("input");
     this.fillEl = this.container.querySelector(".reelsleek-seekbar-fill");
@@ -23,9 +26,17 @@ class SeekbarModule {
   }
 
   #initListeners() {
-    this.container.addEventListener("mousemove", (e) => this.#handleTooltipMove(e));
-    this.seekbar.addEventListener("mousedown", () => { this.isSeeking = true; this.fillEl.style.transition = 'none'; });
-    this.seekbar.addEventListener("touchstart", () => { this.isSeeking = true; this.fillEl.style.transition = 'none'; });
+    this.container.addEventListener("mousemove", (e) =>
+      this.#handleTooltipMove(e),
+    );
+    this.seekbar.addEventListener("mousedown", () => {
+      this.isSeeking = true;
+      this.fillEl.style.transition = "none";
+    });
+    this.seekbar.addEventListener("touchstart", () => {
+      this.isSeeking = true;
+      this.fillEl.style.transition = "none";
+    });
 
     this.seekbar.addEventListener("mouseup", () => {
       this.isSeeking = false;
@@ -52,7 +63,10 @@ class SeekbarModule {
 
     const tooltipWidth = this.tooltipEl.offsetWidth;
     const halfTooltipWidth = tooltipWidth / 2;
-    const clampedX = Math.max(halfTooltipWidth, Math.min(rect.width - halfTooltipWidth, offsetX));
+    const clampedX = Math.max(
+      halfTooltipWidth,
+      Math.min(rect.width - halfTooltipWidth, offsetX),
+    );
 
     this.tooltipEl.style.left = `${clampedX}px`;
   }
@@ -64,7 +78,7 @@ class SeekbarModule {
     const progress = this.seekbar.value / 100;
     this.video.currentTime = this.video.duration * progress;
 
-    this.fillEl.style.transition = 'none';
+    this.fillEl.style.transition = "none";
     this.fillEl.style.transform = `scaleX(${progress})`;
   }
 
@@ -83,24 +97,27 @@ class SeekbarModule {
   }
 
   syncPlay() {
-    if (!isFinite(this.video.duration) || this.isSeeking || this.video.paused) return;
+    if (!isFinite(this.video.duration) || this.isSeeking || this.video.paused)
+      return;
 
     const currentProgress = this.video.currentTime / this.video.duration;
-    const remainingTime = (this.video.duration - this.video.currentTime) / (this.video.playbackRate || 1);
+    const remainingTime =
+      (this.video.duration - this.video.currentTime) /
+      (this.video.playbackRate || 1);
 
-    this.fillEl.style.transition = 'none';
+    this.fillEl.style.transition = "none";
     this.fillEl.style.transform = `scaleX(${currentProgress})`;
     this.fillEl.offsetHeight;
 
     this.fillEl.style.transition = `transform ${remainingTime}s linear, height 0.1s`;
-    this.fillEl.style.transform = 'scaleX(1)';
+    this.fillEl.style.transform = "scaleX(1)";
   }
 
   syncPause() {
     if (!isFinite(this.video.duration)) return;
 
     const currentProgress = this.video.currentTime / this.video.duration;
-    this.fillEl.style.transition = 'none';
+    this.fillEl.style.transition = "none";
     this.fillEl.style.transform = `scaleX(${currentProgress})`;
     this.seekbar.value = `${currentProgress * 100}`;
   }
@@ -129,13 +146,17 @@ class FullscreenModule {
   #buildUI(templateElement) {
     if (!templateElement) return;
 
-    const toolbarContainer = this.video.parentElement.querySelector('.reelsleek-toolbar-container');
+    const toolbarContainer = this.video.parentElement.querySelector(
+      ".reelsleek-toolbar-container",
+    );
     if (toolbarContainer) {
       const clone = document.importNode(templateElement.content, true);
       Keybinds.applyTitles(clone);
       toolbarContainer.appendChild(clone);
-      this.button = toolbarContainer.querySelector('.reelsleek-fullscreen-button');
-      this.button.addEventListener('click', this.#handleButtonClick);
+      this.button = toolbarContainer.querySelector(
+        ".reelsleek-fullscreen-button",
+      );
+      this.button.addEventListener("click", this.#handleButtonClick);
     } else {
       this.container = document.createElement("div");
       this.container.className = "reelsleek-fullscreen-container";
@@ -147,7 +168,8 @@ class FullscreenModule {
       this.button = this.container.querySelector("button");
       this.button.addEventListener("click", this.#handleButtonClick);
 
-      if (!PageHandler.isStorie()) {
+      // Only inject button if video is not a story or in upload modal.
+      if (!PageHandler.isStorie() || video.parentElement.style.transform == "") {
         this.video.parentElement.prepend(this.container);
       }
     }
@@ -167,13 +189,18 @@ class FullscreenModule {
  * UI MODULE: PlayOverlay
  */
 class PlayOverlayModule {
-  constructor(video, templateElement, togglePlayCallback, toggleFullscreenCallback) {
+  constructor(
+    video,
+    templateElement,
+    togglePlayCallback,
+    toggleFullscreenCallback,
+  ) {
     this.video = video;
     this.togglePlay = togglePlayCallback;
     this.toggleFullscreen = toggleFullscreenCallback;
 
     this.container = document.createElement("div");
-    this.container.className = 'reelsleek-play-container';
+    this.container.className = "reelsleek-play-container";
 
     if (templateElement) {
       const clone = document.importNode(templateElement.content, true);
@@ -192,7 +219,10 @@ class PlayOverlayModule {
       this.togglePlay(this.video);
     });
 
-    this.video.parentElement.prepend(this.container);
+    // Only inject button if video is not in upload modal.
+    if (video.parentElement.style.transform == "") {
+      this.video.parentElement.prepend(this.container);
+    }
   }
 
   setUiPaused(isPaused) {
@@ -214,15 +244,15 @@ class VideoControl {
   static doubleClickFullscreenEnabled = true;
 
   static #StorageKeys = {
-    "visibilityKey": "reelsleek-videocontrol-visibility",
-    "doubleClickFullscreenKey": "reelsleek-videocontrol-dblclick-fullscreen",
+    visibilityKey: "reelsleek-videocontrol-visibility",
+    doubleClickFullscreenKey: "reelsleek-videocontrol-dblclick-fullscreen",
   };
 
   // Static dictionary cache holding our file-extracted HTML templates
   static #templates = {
     seekbar: null,
     fullscreen: null,
-    playOverlay: null
+    playOverlay: null,
   };
 
   static #videoInstances = new WeakMap();
@@ -264,8 +294,11 @@ class VideoControl {
       this.#StorageKeys.visibilityKey,
       this.#StorageKeys.doubleClickFullscreenKey,
     ]);
-    this.alwaysVisible = result[this.#StorageKeys.visibilityKey] ?? this.alwaysVisible;
-    this.doubleClickFullscreenEnabled = result[this.#StorageKeys.doubleClickFullscreenKey] ?? this.doubleClickFullscreenEnabled;
+    this.alwaysVisible =
+      result[this.#StorageKeys.visibilityKey] ?? this.alwaysVisible;
+    this.doubleClickFullscreenEnabled =
+      result[this.#StorageKeys.doubleClickFullscreenKey] ??
+      this.doubleClickFullscreenEnabled;
   }
 
   // Asynchronously requests the bundled asset template package file
@@ -280,18 +313,28 @@ class VideoControl {
       const doc = parser.parseFromString(text, "text/html");
 
       // Extract template components out into memory variables
-      this.#templates.seekbar = doc.getElementById("reelsleek-seekbar-template");
-      this.#templates.fullscreen = doc.getElementById("reelsleek-fullscreen-template");
-      this.#templates.playOverlay = doc.getElementById("reelsleek-play-template");
+      this.#templates.seekbar = doc.getElementById(
+        "reelsleek-seekbar-template",
+      );
+      this.#templates.fullscreen = doc.getElementById(
+        "reelsleek-fullscreen-template",
+      );
+      this.#templates.playOverlay = doc.getElementById(
+        "reelsleek-play-template",
+      );
     } catch (err) {
-      console.error("[VideoControl] Error loading controls.html template asset file:", err);
+      console.error(
+        "[VideoControl] Error loading controls.html template asset file:",
+        err,
+      );
     }
   }
 
   static #saveStates() {
     browser.storage.local.set({
       [this.#StorageKeys.visibilityKey]: this.alwaysVisible,
-      [this.#StorageKeys.doubleClickFullscreenKey]: this.doubleClickFullscreenEnabled,
+      [this.#StorageKeys.doubleClickFullscreenKey]:
+        this.doubleClickFullscreenEnabled,
     });
   }
 
@@ -301,34 +344,60 @@ class VideoControl {
   }
 
   static #attachKeybinds() {
-    registerKeybind("seekForward", "ArrowRight", "Seek forward 5s", "Playback", () => {
-      if (PageHandler.isStorie()) return;
-      this.currentlyPlayingVideo.currentTime += 5;
-    });
-    registerKeybind("seekBackward", "ArrowLeft", "Seek backward 5s", "Playback", () => {
-      if (PageHandler.isStorie()) return;
-      this.currentlyPlayingVideo.currentTime -= 5;
-    });
-    registerKeybind("togglePlay", "KeyP", "Play / pause", "Playback", () => this.togglePlay(this.currentlyPlayingVideo));
+    registerKeybind(
+      "seekForward",
+      "ArrowRight",
+      "Seek forward 5s",
+      "Playback",
+      () => {
+        if (PageHandler.isStorie()) return;
+        this.currentlyPlayingVideo.currentTime += 5;
+      },
+    );
+    registerKeybind(
+      "seekBackward",
+      "ArrowLeft",
+      "Seek backward 5s",
+      "Playback",
+      () => {
+        if (PageHandler.isStorie()) return;
+        this.currentlyPlayingVideo.currentTime -= 5;
+      },
+    );
+    registerKeybind("togglePlay", "KeyP", "Play / pause", "Playback", () =>
+      this.togglePlay(this.currentlyPlayingVideo),
+    );
     // Space is kept as a fixed, always-on secondary shortcut for play/pause
     // (standard video-player convention) and isn't user-remappable.
     addKeybind("Space", (e) => {
       this.togglePlay(this.currentlyPlayingVideo);
       stopEvent(e);
     });
-    registerKeybind("toggleFullscreen", "KeyF", "Toggle fullscreen", "Playback", () => this.toggleFullscreen(this.currentlyPlayingVideo));
+    registerKeybind(
+      "toggleFullscreen",
+      "KeyF",
+      "Toggle fullscreen",
+      "Playback",
+      () => this.toggleFullscreen(this.currentlyPlayingVideo),
+    );
   }
 
   static async setup() {
     await this.#loadStates();
     await this.#loadExternalTemplates(); // Load and unpack the external file
     this.#attachKeybinds();
-    document.body.classList.toggle("reelsleek-seekbar-always-visible", this.alwaysVisible);
+    document.body.classList.toggle(
+      "reelsleek-seekbar-always-visible",
+      this.alwaysVisible,
+    );
   }
 
   static setVisibility(visibility) {
     this.alwaysVisible = visibility;
-    document.body.classList.toggle("reelsleek-seekbar-always-visible", this.alwaysVisible);
+    document.body.classList.toggle(
+      "reelsleek-seekbar-always-visible",
+      this.alwaysVisible,
+    );
     this.#saveStates();
   }
 
@@ -338,8 +407,17 @@ class VideoControl {
 
     // Pass the pre-parsed templates down to each initialization module cleanly
     const seekbar = new SeekbarModule(video, this.#templates.seekbar);
-    const fullscreen = new FullscreenModule(video, this.#templates.fullscreen, VideoControl.toggleFullscreen);
-    const playOverlay = new PlayOverlayModule(video, this.#templates.playOverlay, VideoControl.togglePlay, VideoControl.toggleFullscreen);
+    const fullscreen = new FullscreenModule(
+      video,
+      this.#templates.fullscreen,
+      VideoControl.toggleFullscreen,
+    );
+    const playOverlay = new PlayOverlayModule(
+      video,
+      this.#templates.playOverlay,
+      VideoControl.togglePlay,
+      VideoControl.toggleFullscreen,
+    );
 
     const playListener = () => {
       seekbar.setUiPaused(false);
@@ -383,8 +461,8 @@ class VideoControl {
         play: playListener,
         pause: pauseListener,
         seeked: seekedListener,
-        ratechange: ratechangeListener
-      }
+        ratechange: ratechangeListener,
+      },
     });
 
     if (!PageHandler.isStorie()) return;
@@ -423,6 +501,6 @@ class VideoControl {
   }
 
   static resetAll() {
-    getCleanVideos().forEach(video => this.reset(video));
+    getCleanVideos().forEach((video) => this.reset(video));
   }
 }

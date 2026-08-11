@@ -29,7 +29,10 @@ class AudioControlModule {
     this.#updateSliderFill();
 
     // 3. Inject control interface module directly into the view layout
-    this.video.parentElement.prepend(this.container);
+    // Only inject button if video is not in upload modal.
+    if (video.parentElement.style.transform == "") {
+      this.video.parentElement.prepend(this.container);
+    }
 
     // 4. Bind listeners and operational state synchronization hooks
     this.#initListeners();
@@ -177,7 +180,7 @@ class AudioControl {
     AudioControl.muted = muted;
     AudioControl.#clickNativeMuteButton();
     AudioControl.#eventsPublisher.publish(AudioControl.#Event.MUTE_CHANGE);
-    
+
     if (VideoControl.currentlyPlayingVideo) {
       VideoControl.currentlyPlayingVideo.volume = AudioControl.volume;
       VideoControl.currentlyPlayingVideo.muted = AudioControl.muted;
@@ -198,7 +201,7 @@ class AudioControl {
     } else if (AudioControl.volume === 0 && !AudioControl.muted) {
       AudioControl.toggleMute();
     }
-    
+
     AudioControl.#eventsPublisher.publish(AudioControl.#Event.VOLUME_CHANGE);
     AudioControl.#saveStates();
 
