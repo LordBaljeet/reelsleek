@@ -161,15 +161,6 @@ class MediaResolver {
     const timeout = setTimeout(() => controller.abort(), 5000);
 
     try {
-      try {
-        const w = Math.round(screen.width * (devicePixelRatio || 1));
-        const h = Math.round(screen.height * (devicePixelRatio || 1));
-        document.cookie = `wd=${w}x${h}; path=/; SameSite=None; Secure`;
-        document.cookie = `dpr=${devicePixelRatio || 2}; path=/; SameSite=None; Secure`;
-      } catch {
-        /* ignore */
-      }
-
       const response = await fetch(
         `https://www.instagram.com/api/v1/media/${mediaId}/info/`,
         {
